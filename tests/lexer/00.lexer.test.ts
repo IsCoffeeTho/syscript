@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test";
-import { lexer } from "../../src/tokenize";
 
 test("Pass in Nothing Error", () => {
 	// @ts-expect-error

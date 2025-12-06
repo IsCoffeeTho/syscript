@@ -1,6 +1,5 @@
 export type compilerErrorOptions = {
-	message: string,
-	
+	message: string,	
 };
 
 export default class compilerError {
@@ -13,5 +12,5 @@ export default class compilerError {
 }
 
 compilerError.prototype.toString = function() {
-	return `Compiler Error: ${this.message}\n`;
+	return `Compiler Error: ${this.id}: ${this.message}\n`;
 }

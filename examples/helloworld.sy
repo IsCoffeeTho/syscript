@@ -1,3 +1,10 @@
-return {
-	
+#!/bin/syscript
+
+/*
+	big comment
+*/
+fn main(argc: int, argv: string[]): int {
+	print(argc);
+	print(argv[0]);
+	return 0;
 }

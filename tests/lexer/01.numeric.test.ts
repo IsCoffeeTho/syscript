@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test";
-import { lexer, type lexicon, lexiconType } from "../../src/tokenize";
 
 var nums: { [_: string]: string } = {
 	"Valid Numerals": "0123456789",

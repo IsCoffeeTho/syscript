@@ -1,7 +1,8 @@
 import parseArguments from "./cli/arguments"
 import pkg from "../package.json"
 import compilerError from "./errors/compilerError";
-import tokenize, { tokenPrimatives } from "./compiler/tokenizer";
+import tokenize from "./compiler/tokenize.ts";
+import lexer from "./compiler/lexer.ts";
 
 var inputFiles: string[] = [];
 var outputFile: string = "a.out";
@@ -44,22 +45,17 @@ try {
 	}
 
 	(async () => {
+		var waitFor = [];
 		for (var file of inputFiles) {
-			Bun.file(file).bytes().then((buf) => {
-				var tokenTypes = Object.keys(tokenPrimatives);
-				var tokenTypeMap: string[] = [];
-				for (var tokenType of tokenTypes) {
-					tokenTypeMap[tokenPrimatives[tokenType]] = tokenType;
-				}
-				var tokenizer = tokenize(buf);
-				while(tokenizer.hasNext()) {
-					var token = tokenizer.next()
-					console.log(tokenTypeMap[token.type], token);
-				}
-				var token = tokenizer.next()
-				console.log(tokenTypeMap[token.type], token);
-			});
+			waitFor.push((async () => {
+				console.log(file);
+				var buf = await Bun.file(file).bytes();
+				var tokenizer = tokenize(Buffer.from(buf));
+				var doc = lexer(file, tokenizer);
+				console.log(doc);
+			})());
 		}
+		await Promise.allSettled(waitFor);
 	})();
 
 } catch (err) {
