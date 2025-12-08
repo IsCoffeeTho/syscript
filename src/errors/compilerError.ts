@@ -1,16 +1,24 @@
+export enum errorLevel {
+	debug,
+	info,
+	warn,
+	error
+}
+
 export type compilerErrorOptions = {
-	message: string,	
+	message: string;
+	level?: errorLevel;
 };
 
 export default class compilerError {
-	readonly id: string;
-	readonly message : string;
-	constructor(id: string, options: compilerErrorOptions) {
-		this.id = id;
+	readonly message: string;
+	readonly level: errorLevel;
+	constructor(options: compilerErrorOptions) {
 		this.message = options.message;
+		this.level = options.level ?? errorLevel.debug;
 	}
 }
 
-compilerError.prototype.toString = function() {
-	return `Compiler Error: ${this.id}: ${this.message}\n`;
-}
+compilerError.prototype.toString = function () {
+	return `Error: ${this.message}\n`;
+};
