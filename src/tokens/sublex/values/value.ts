@@ -12,12 +12,12 @@ import singletonValue from "./singletonValue";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => singletonValue.isStartingToken(tok),
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.value, startingToken, [
-			singletonValue.lexer(startingToken, tokenizer)
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.value, tok, [
+			singletonValue.lexer(tok, tokenizer)
 		]);
 		
-		var tok = nextAfterWSC(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (!operator.isStartingToken(tok)) {
 			tokenizer.push(tok);
 			retToken.complete = true;

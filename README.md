@@ -5,8 +5,9 @@ A Type First Script like language that can be compiled down to multiple binary f
 ```
 // main.sy
 
+/* This is the entry point to your program */
 fn main(argc: uint32, argv: string[]) {
-	print("");
+	print("Hello", "World!");
 }
 ```
 

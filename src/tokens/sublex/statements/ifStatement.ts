@@ -9,16 +9,16 @@ import statement from "./statement";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => (tok.type == tokenType.keyword && tok.value == "if"),
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.if_statement, startingToken, {
-			start: startingToken,
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.if_statement, tok, {
+			start: tok,
 			condition: unknownLexicon,
 			routine: unknownLexicon,
 			else: <token | undefined>undefined,
 			elseRoutine: <lexicon | undefined>undefined
 		});
 		
-		var tok = nextAfterWSC(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (!parenthEnclosed.isStartingToken(tok)) return retToken;
 		retToken.children.condition = parenthEnclosed.lexer(tok, tokenizer);
 		

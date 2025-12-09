@@ -6,14 +6,14 @@ import value from "./value";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.symbol && tok.value == "(",
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.parenthesis_enclosed, startingToken, {
-			start: startingToken,
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.parenthesis_enclosed, tok, {
+			start: tok,
 			value: unknownLexicon,
 			end: unknownToken,
 		});
 		
-		var tok = nextAfterWSC(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (!value.isStartingToken(tok)) return retToken;
 		retToken.children.value = value.lexer(tok, tokenizer);
 		tok = nextAfterWSC(tokenizer);

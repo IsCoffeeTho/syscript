@@ -6,9 +6,9 @@ import { nextAfterWS } from "../removers";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.keyword && (tok.value == "true" || tok.value == "false"),
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.boolean_literal, startingToken, {
-			literal: startingToken,
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.boolean_literal, tok, {
+			literal: tok,
 		});
 
 		retToken.complete = true;

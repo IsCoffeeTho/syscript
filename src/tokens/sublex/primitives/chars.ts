@@ -6,16 +6,16 @@ import { nextAfterWS } from "../removers";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.symbol && tok.value == "'",
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.character_literal, startingToken, {
-			start: startingToken,
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.character_literal, tok, {
+			start: tok,
 			tokens: <token[]>[],
 			end: <token | undefined>undefined,
 		});
 
 		while (tokenizer.hasNext()) {
-			var tok = nextAfterWS(tokenizer);
-			if (tok.type == tokenType.symbol && tok.value == startingToken.value) {
+			tok = nextAfterWS(tokenizer);
+			if (tok.type == tokenType.symbol && tok.value == tok.value) {
 				retToken.children.end = tok;
 				retToken.complete;
 				return retToken;

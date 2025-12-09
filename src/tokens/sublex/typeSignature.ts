@@ -10,12 +10,12 @@ type typeLexicon = {
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.identifier,
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.type_sig, startingToken, <typeLexicon>{
-			name: startingToken,
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.type_sig, tok, <typeLexicon>{
+			name: tok,
 		});
 		retToken.complete = true;
-		var tok = nextAfterWSC(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (tok.type == tokenType.grapheme && tok.value == "[]") {
 			retToken.children.list = tok;
 		} else

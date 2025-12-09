@@ -15,15 +15,15 @@ export default <sublexer>{
 		if (numbers.isStartingToken(tok)) return true;
 		return false;
 	},
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.primitive, startingToken, {
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.primitive, tok, {
 			component: unknownLexicon
 		});
 	
-		if (numbers.isStartingToken(startingToken)) retToken.children.component = numbers.lexer(startingToken, tokenizer);
-		else if (chars.isStartingToken(startingToken)) retToken.children.component = chars.lexer(startingToken, tokenizer);
-		else if (booleans.isStartingToken(startingToken)) retToken.children.component = booleans.lexer(startingToken, tokenizer);
-		else if (strings.isStartingToken(startingToken)) retToken.children.component = strings.lexer(startingToken, tokenizer);
+		if (numbers.isStartingToken(tok)) retToken.children.component = numbers.lexer(tok, tokenizer);
+		else if (chars.isStartingToken(tok)) retToken.children.component = chars.lexer(tok, tokenizer);
+		else if (booleans.isStartingToken(tok)) retToken.children.component = booleans.lexer(tok, tokenizer);
+		else if (strings.isStartingToken(tok)) retToken.children.component = strings.lexer(tok, tokenizer);
 		
 		retToken.complete = true;
 		return retToken;

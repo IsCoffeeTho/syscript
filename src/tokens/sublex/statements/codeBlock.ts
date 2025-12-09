@@ -7,9 +7,9 @@ import statement from "./statement";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.symbol && tok.value == "{",
-	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.code_block, startingToken, {
-			start: startingToken,
+	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var retToken = new lexicon(lexiconType.code_block, tok, {
+			start: tok,
 			statements: <(lexicon | token)[]>[],
 			end: <token | undefined>undefined,
 		});
@@ -17,7 +17,7 @@ export default <sublexer>{
 		var statements = retToken.children.statements;
 		
 		while (tokenizer.hasNext()) {
-			var tok = nextAfterWSC(tokenizer);
+			tok = nextAfterWSC(tokenizer);
 			if (comments.isStartingToken(tok))
 				statements.push(comments.lexer(tok, tokenizer));
 			else if (statement.isStartingToken(tok))
