@@ -6,12 +6,13 @@ export default <sublexer>{
 	name: "comment_multi",
 	isStartingToken: (tok: token) => tok.type == tokenType.grapheme && tok.value == "/*",
 	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.multi_comment, startingToken);
+		var retToken = new lexicon(lexiconType.multi_comment, startingToken, <token[]>[startingToken]);
 
 		while (tokenizer.hasNext()) {
 			var tok = tokenizer.next();
 			retToken.children.push(tok);
-			if (tok.type == tokenType.grapheme && tok.value == "*/") break;
+			if (tok.type == tokenType.grapheme && tok.value == "*/")
+				break;
 		}
 		
 		retToken.complete = true;

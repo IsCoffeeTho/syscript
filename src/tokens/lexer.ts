@@ -3,21 +3,35 @@ import type { parseMachine } from "./parseMachine";
 
 export enum lexiconType {
 	unknown,
-	document,
-	shebang,
+	boolean_literal,
+	string_literal,
+	character_literal,
+	integer_literal,
+	float_literal,
+	primitive,
+	singleton_value,
+	value,
+	logic_operator,
+	comparative_operator,
+	arithmetic_operator,
+	assignment_operator,
+	parenthesis_enclosed,
+	if_statement,
+	function,
+	code_block,
+	type_sig,
+	class_def,
+	struct_def,
+	parameter,
+	variadic_parameter,
+	param_list,
 	comment,
 	single_comment,
 	multi_comment,
 	import,
 	export,
-	function,
-	code_block,
-	parameter,
-	variadic_parameter,
-	class_def,
-	struct_def,
-	param_list,
-	type_sig,
+	document,
+	shebang,
 }
 
 export class lexicon<C = (token | lexicon<any>)[]> {
@@ -29,16 +43,16 @@ export class lexicon<C = (token | lexicon<any>)[]> {
 	constructor(
 		public type: lexiconType,
 		startingToken: token | lexicon,
-		children: C,
+		children?: C,
 	) {
 		this.col = startingToken.col;
 		this.line = startingToken.line;
-		this.children = children;
+		this.children = children ?? <any>{};
 	}
 }
 
 const unknownLexicon = new lexicon(lexiconType.unknown, unknownToken, []);
-export { unknownLexicon }
+export { unknownLexicon };
 
 lexicon.prototype.toString = function () {
 	var header = `Lexicon <${lexiconType[this.type]}> ${this.line}:${this.col}`;
@@ -48,12 +62,23 @@ lexicon.prototype.toString = function () {
 		}
 	} else {
 		for (var childKey in this.children) {
-			var child = this.children[childKey]
-			header += `\n${childKey} = ${child}`.replace(/\n/g, "\n│   ");
+			var child = this.children[childKey];
+			var childStr = `\n${childKey} = `;
+			if (Array.isArray(child)) {
+				childStr += `[`;
+				for (var subchild of child)
+					childStr += `\n${subchild}`.replace(/\n/g, "\n    ");
+				if (child.length > 0)
+					childStr += `\n`;
+				childStr += `]`;
+			} else {
+				childStr += `${child}`;
+			}
+			header += childStr.replace(/\n/g, "\n│   ");
 		}
 	}
-	if (!this.complete) header += "\n│   INCOMPLETE !!!";
-	return header.replace(/│   [^│]+$/g, m => `└—  ${m.slice(4)}`);
+	header += this.complete ? "\n<complete>" : "\nINCOMPLETE !!!";
+	return header;
 };
 
 export type sublexer = {

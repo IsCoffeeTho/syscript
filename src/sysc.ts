@@ -1,6 +1,6 @@
 import parseArguments from "./cli/arguments";
 import pkg from "../package.json";
-import compilerError, { errorLevel } from "./errors/compilerError";
+import compilerError, { errorLevel } from "./errors/compiler.ts";
 import tokenize, { token } from "./tokens/tokenize.ts";
 import lexer from "./tokens/lexer.ts";
 import graphemizer from "./tokens/grapheme.ts";
@@ -79,7 +79,7 @@ try {
 	}
 	else {
 		console.error("There was an unexpected error.");
-		!debugError ? console.error("Add --debug or -d to see the error") : console.error(err);
+		!debugError ? console.error("Add --debug-compilation to see the error") : console.error(err);
 	}
 	process.stderr.write("compilation terminated.\n");
 	process.exit(1);

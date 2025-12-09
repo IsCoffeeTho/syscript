@@ -1,3 +1,11 @@
-fn print(fmt: string, ...varg: any[]): uint64 {
-	
+const GLOBAL_VARIABLE: uint32 = 0b1;
+
+/**
+	Documentation
+*/
+fn print(fmt: string, ...varg: any[]) {
+	if ( 0b1 ) {
+		print("true");
+	} else
+		print("false");
 }

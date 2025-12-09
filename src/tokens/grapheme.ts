@@ -1,20 +1,21 @@
 import wrapParseMachine, { type parseMachine } from "./parseMachine";
 import { tokenType, type token } from "./tokenize";
 
-const graphemes = ["...", "#!", "//", "/*", "*/", "[]", "++", "--", "+=", "-=", "==", "!=", "/=", "*="];
+const graphemes = ["...", "#!", "//", "/*", "*/", "[]", "++", "--", "+=", "-=", "==", "!=", "/=", "*=", "&&", "||"];
 
 export default function graphemizer(tokenizer: parseMachine<token>): parseMachine<token> {
 	var tokenBuffer: token[] = [];
 	var graphemeBuffer = "";
 	return wrapParseMachine({
 		consume() {
-			if (tokenBuffer.length > 0)
-				return <token>tokenBuffer.shift();
+			if (tokenBuffer.length > 0) return <token>tokenBuffer.shift();
 			while (tokenizer.hasNext()) {
 				var tok = tokenizer.next();
 				tokenBuffer.push(tok);
-				if (tok.type != tokenType.symbol)
+				if (tok.type != tokenType.symbol) {
+					graphemeBuffer = "";
 					break;
+				}
 				graphemeBuffer += tok.value;
 				var noMatch = true;
 				for (var grapheme of graphemes) {
@@ -24,12 +25,10 @@ export default function graphemizer(tokenizer: parseMachine<token>): parseMachin
 					noMatch = false;
 					if (grapheme == graphemeBuffer) {
 						var tok = <token>tokenBuffer.shift();
-						tokenBuffer = [];
-						
 						tok.type = tokenType.grapheme;
 						tok.value = graphemeBuffer;
+						tokenBuffer = [];
 						graphemeBuffer = "";
-						
 						return tok;
 					}
 				}
@@ -39,10 +38,9 @@ export default function graphemizer(tokenizer: parseMachine<token>): parseMachin
 				}
 			}
 			return <token>tokenBuffer.shift();
-			
 		},
 		available() {
-			return (tokenBuffer.length > 0) || tokenizer.hasNext();
+			return tokenBuffer.length > 0 || tokenizer.hasNext();
 		},
 	});
 }

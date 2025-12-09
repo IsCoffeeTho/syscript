@@ -3,7 +3,7 @@ import type { parseMachine } from "../../parseMachine";
 import { token, tokenType, unknownToken } from "../../tokenize";
 import codeBlock from "../statements/codeBlock";
 import typeRef from "../typeSignature";
-import { wsc } from "../removers";
+import { nextAfterWSC } from "../removers";
 import paramList from "./paramList";
 
 export default <sublexer>{
@@ -12,30 +12,25 @@ export default <sublexer>{
 		var retToken = new lexicon(lexiconType.function, startingToken, {
 			name: unknownToken,
 			params: unknownLexicon,
-			returnType: unknownLexicon,
-			routine: unknownLexicon
+			returnType: <lexicon | undefined>undefined,
+			routine: unknownLexicon,
 		});
 
-		var tok = wsc(tokenizer);
+		var tok = nextAfterWSC(tokenizer);
 		if (tok.type != tokenType.identifier) return retToken;
 		retToken.children.name = tok;
 
-
-		tok = wsc(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (!paramList.isStartingToken(tok)) return retToken;
 		retToken.children.params = paramList.lexer(tok, tokenizer);
-		
-		tok = wsc(tokenizer);
-		if (tok.type != tokenType.symbol || tok.value != ":") return retToken;
 
-		tok = wsc(tokenizer);
-		if (!typeRef.isStartingToken(tok)) return retToken;
-		retToken.children.returnType = typeRef.lexer(tok, tokenizer);
-
-		wsc(tokenizer);
-
-		tok = tokenizer.next();
-		if (!codeBlock.isStartingToken(tok)) return retToken;
+		tok = nextAfterWSC(tokenizer);
+		if (tok.type == tokenType.symbol && tok.value == ":") {
+			tok = nextAfterWSC(tokenizer);
+			if (!typeRef.isStartingToken(tok)) return retToken;
+			retToken.children.returnType = typeRef.lexer(tok, tokenizer);
+			tok = nextAfterWSC(tokenizer);
+		} else if (!codeBlock.isStartingToken(tok)) return retToken;
 		retToken.children.routine = codeBlock.lexer(tok, tokenizer);
 
 		retToken.complete = true;

@@ -2,7 +2,7 @@ import { lexicon, lexiconType, unknownLexicon, type sublexer } from "../../lexer
 import type { parseMachine } from "../../parseMachine";
 import { tokenType, unknownToken, type token } from "../../tokenize";
 import typeRef from "../typeSignature";
-import { wsc } from "../removers";
+import { nextAfterWSC } from "../removers";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.grapheme && tok.value == "...",
@@ -12,12 +12,12 @@ export default <sublexer>{
 			type: unknownLexicon
 		});
 		
-		var tok = wsc(tokenizer);
+		var tok = nextAfterWSC(tokenizer);
 		if (tok.type != tokenType.identifier) return retToken;
 		retToken.children.name = tok;
-		tok = wsc(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (tok.type != tokenType.symbol && tok.value != ":") return retToken;
-		tok = wsc(tokenizer);
+		tok = nextAfterWSC(tokenizer);
 		if (!typeRef.isStartingToken(tok)) return retToken;
 		retToken.children.type = typeRef.lexer(tok, tokenizer);
 		

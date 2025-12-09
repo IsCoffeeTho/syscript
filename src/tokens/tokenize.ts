@@ -20,7 +20,7 @@ const tokenTypeRegExp = {
 	[tokenType.symbol]: /^([\-\[\]\{\}\(\)\\\/\+\=!\@\#\$\%\^\&\*\`\~\"\'\:\;\,\.\<\>\?\|])$/g,
 };
 
-const keywords = ["fn", "if", "let", "new", "else", "return", "class", "super", "extends", "struct", "import", "export", "implements"];
+const keywords = ["if", "else", "true", "false", "let", "fn", "return", "const", "class", "super", "extends", "struct", "import", "export", "implements"];
 
 export class token {
 	type: tokenType = tokenType.unknown;
