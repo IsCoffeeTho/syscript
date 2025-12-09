@@ -1,7 +1,8 @@
 import { lexicon, lexiconType, type sublexer } from "../../lexer";
 import type { parseMachine } from "../../parseMachine";
 import { tokenType, type token } from "../../tokenize";
-import logicalOperator from "../operators/logical";
+import logicalOperator from "../operators/logicalOperator";
+import operator from "../operators/operator";
 import primitive from "../primitives/primitive";
 import { nextAfterWSC } from "../removers";
 import parenthEnclosed from "./parenthEnclosed";
@@ -17,12 +18,12 @@ export default <sublexer>{
 		]);
 		
 		var tok = nextAfterWSC(tokenizer);
-		if (!logicalOperator.isStartingToken(tok)) {
+		if (!operator.isStartingToken(tok)) {
 			tokenizer.push(tok);
 			retToken.complete = true;
 			return retToken;
 		}
-		retToken.children.push(logicalOperator.lexer(tok, tokenizer));
+		retToken.children.push(operator.lexer(tok, tokenizer));
 		tok = nextAfterWSC(tokenizer);
 		if (!singletonValue.isStartingToken(tok)) return retToken;
 		retToken.children.push(singletonValue.lexer(tok, tokenizer));

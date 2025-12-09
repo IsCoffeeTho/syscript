@@ -1,7 +1,7 @@
 import wrapParseMachine, { type parseMachine } from "./parseMachine";
 import { tokenType, type token } from "./tokenize";
 
-const graphemes = ["...", "#!", "//", "/*", "*/", "[]", "++", "--", "+=", "-=", "==", "!=", "/=", "*=", "&&", "||"];
+const graphemes = ["...", "#!", "//", "/*", "*/", "[]", "++", "--", "+=", "-=", "==", "!=", ">=", "<=", "<<", ">>", "/=", "*=", "&&", "||"];
 
 export default function graphemizer(tokenizer: parseMachine<token>): parseMachine<token> {
 	var tokenBuffer: token[] = [];

@@ -77,7 +77,7 @@ lexicon.prototype.toString = function () {
 			header += childStr.replace(/\n/g, "\n│   ");
 		}
 	}
-	header += this.complete ? "\n<complete>" : "\nINCOMPLETE !!!";
+	header += `\n└ < ${this.complete ? "Complete" : "Incomplete !!!"}`;
 	return header;
 };
 

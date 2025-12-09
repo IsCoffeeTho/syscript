@@ -11,7 +11,7 @@ export default <sublexer>{
 		var retToken = new lexicon(lexiconType.code_block, startingToken, {
 			start: startingToken,
 			statements: <(lexicon | token)[]>[],
-			end: unknownToken,
+			end: <token | undefined>undefined,
 		});
 		
 		var statements = retToken.children.statements;

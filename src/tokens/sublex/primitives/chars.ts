@@ -10,7 +10,7 @@ export default <sublexer>{
 		var retToken = new lexicon(lexiconType.character_literal, startingToken, {
 			start: startingToken,
 			tokens: <token[]>[],
-			end: unknownToken,
+			end: <token | undefined>undefined,
 		});
 
 		while (tokenizer.hasNext()) {
