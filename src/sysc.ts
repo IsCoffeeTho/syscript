@@ -4,11 +4,15 @@ import compilerError, { errorLevel } from "./errors/compiler.ts";
 import tokenize, { token } from "./tokens/tokenize.ts";
 import lexer from "./tokens/lexer.ts";
 import graphemizer from "./tokens/grapheme.ts";
+import keywordizer from "./tokens/keywords.ts";
+import sysLSP from "./lsp/lsp.ts";
 
 var inputFiles: string[] = [];
-var outputFile: string = "a.out";
+var outputFile = "a.out";
+var lspConfig = `${process.env["HOME"]}/.config/syscript/lsp.config`
 
-var debugError: boolean = false;
+var debugError = false;
+var startLSP = false;
 
 parseArguments(
 	pkg.name,
@@ -21,6 +25,20 @@ parseArguments(
 				console.log(`${pkg.name} v${pkg.version}`);
 				process.exit(0);
 			},
+		},
+		{
+			parameter: "lsp",
+			description: "Runs the LSP for in editor errors and assistance",
+			trigger() {
+				startLSP = true;
+			}
+		},
+		{
+			parameter: "lsp-config",
+			description: "Runs the LSP for in editor errors and assistance",
+			trigger(file: string) {
+				lspConfig = file;
+			}
 		},
 		{
 			parameter: "output",
@@ -43,44 +61,48 @@ parseArguments(
 	},
 );
 
-try {
-	if (!inputFiles.length) {
-		throw new compilerError({
-			message: `Missing input files.`,
-			level: errorLevel.error
-		});
-	}
+if (startLSP) {
+	const lsp = new sysLSP(lspConfig);
+} else {
+	try {
+		if (!inputFiles.length) {
+			throw new compilerError({
+				message: `Missing input files.`,
+				level: errorLevel.error
+			});
+		}
 
-	var waitFor = [];
-	for (var filename of inputFiles)
-		waitFor.push(
-			(async () => {
-				console.log(filename);
-				var file = Bun.file(filename);
-				if (!(await file.exists()))
-					throw new compilerError({
-						message: `Cannot read "${filename}", file does not exist.`,
-						level: errorLevel.error
-					});
-				var buf = await file.bytes();
-				var tokenizer = tokenize(Buffer.from(buf));
-				tokenizer = graphemizer(tokenizer);
-				var doc = lexer(filename, tokenizer);
-				while (doc.hasNext()) {
-					console.log(`${doc.next()}`);
-				}
-			})(),
-		);
-	await Promise.all(waitFor);
-	
-} catch (err) {
-	if (err instanceof compilerError) {
-		console.log(err.toString());
+		var waitFor = [];
+		for (var filename of inputFiles)
+			waitFor.push(
+				(async () => {
+					console.log(filename);
+					var file = Bun.file(filename);
+					if (!(await file.exists()))
+						throw new compilerError({
+							message: `Cannot read "${filename}", file does not exist.`,
+							level: errorLevel.error
+						});
+					var buf = await file.bytes();
+					var tokenizer = tokenize(Buffer.from(buf));
+					tokenizer = keywordizer(tokenizer);
+					tokenizer = graphemizer(tokenizer);
+					var doc = lexer(tokenizer);
+					while (doc.hasNext()) {
+						console.log(`${doc.next()}`);
+					}
+				})(),
+			);
+		await Promise.all(waitFor);
+	} catch (err) {
+		if (err instanceof compilerError) {
+			console.log(err.toString());
+		}
+		else {
+			console.error("There was an unexpected error.");
+			!debugError ? console.error("Add --debug-compilation to see the error") : console.error(err);
+		}
+		process.stderr.write("compilation terminated.\n");
+		process.exit(1);
 	}
-	else {
-		console.error("There was an unexpected error.");
-		!debugError ? console.error("Add --debug-compilation to see the error") : console.error(err);
-	}
-	process.stderr.write("compilation terminated.\n");
-	process.exit(1);
 }

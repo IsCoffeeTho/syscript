@@ -2,24 +2,21 @@ import { lexicon, lexiconType, type sublexer } from "../../lexer";
 import type { parseMachine } from "../../parseMachine";
 import { type token, tokenType } from "../../tokenize";
 import { nextAfterWSC } from "../removers";
-import value from "./value";
+import value from "../values/value";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.symbol && tok.value == "(",
+	isStartingToken: (tok: token) => (tok.type == tokenType.keyword && tok.value == "return"),
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
-		var retval = new lexicon(lexiconType.parenthesis_enclosed, tok, {
+		var retval = new lexicon(lexiconType.if_statement, tok, {
 			start: tok,
-			value: <lexicon | undefined>undefined,
-			end: <token | undefined>undefined,
+			value: <lexicon | undefined>undefined
 		});
-
+		
 		tok = nextAfterWSC(tokenizer);
-		if (!value.isStartingToken(tok)) return retval;
+		if (!value.isStartingToken(tok))
+			return retval;
 		retval.children.value = value.lexer(tok, tokenizer);
-		tok = nextAfterWSC(tokenizer);
-		if (tok.type != tokenType.symbol || tok.value != ")") return retval;
-		retval.children.end = tok;
-
+		
 		retval.complete = true;
 		return retval;
 	},

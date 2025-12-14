@@ -1,6 +1,6 @@
 import { lexicon, lexiconType, type sublexer } from "../../lexer";
 import type { parseMachine } from "../../parseMachine";
-import { type token, tokenType, unknownToken } from "../../tokenize";
+import { type token, tokenType } from "../../tokenize";
 import comments from "../comments/comments";
 import { nextAfterWSC } from "../removers";
 import statement from "./statement";
@@ -8,13 +8,13 @@ import statement from "./statement";
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.symbol && tok.value == "{",
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.code_block, tok, {
+		var retval = new lexicon(lexiconType.code_block, tok, {
 			start: tok,
 			statements: <(lexicon | token)[]>[],
 			end: <token | undefined>undefined,
 		});
 		
-		var statements = retToken.children.statements;
+		var statements = retval.children.statements;
 		
 		while (tokenizer.hasNext()) {
 			tok = nextAfterWSC(tokenizer);
@@ -23,14 +23,14 @@ export default <sublexer>{
 			else if (statement.isStartingToken(tok))
 				statements.push(statement.lexer(tok, tokenizer));
 			else if (tok.type == tokenType.symbol && tok.value == "}") {
-				retToken.children.end = tok;
-				retToken.complete = true;
+				retval.children.end = tok;
+				retval.complete = true;
 				break; 
 			} else
 				statements.push(tok);
 		}
 		
 		
-		return retToken;
+		return retval;
 	},
 };

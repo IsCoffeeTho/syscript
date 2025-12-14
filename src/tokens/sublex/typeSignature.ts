@@ -1,6 +1,6 @@
-import { lexicon, lexiconType, unknownLexicon, type sublexer } from "../lexer";
+import { lexicon, lexiconType, type sublexer } from "../lexer";
 import type { parseMachine } from "../parseMachine";
-import { token, tokenType, unknownToken } from "../tokenize";
+import { token, tokenType } from "../tokenize";
 import { nextAfterWSC } from "./removers";
 
 type typeLexicon = {
@@ -11,15 +11,15 @@ type typeLexicon = {
 export default <sublexer>{
 	isStartingToken: (tok: token) => tok.type == tokenType.identifier,
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.type_sig, tok, <typeLexicon>{
+		var retval = new lexicon(lexiconType.type_sig, tok, <typeLexicon>{
 			name: tok,
 		});
-		retToken.complete = true;
+		retval.complete = true;
 		tok = nextAfterWSC(tokenizer);
 		if (tok.type == tokenType.grapheme && tok.value == "[]") {
-			retToken.children.list = tok;
+			retval.children.list = tok;
 		} else
 			tokenizer.push(tok);
-		return retToken;
+		return retval;
 	},
 };

@@ -1,7 +1,7 @@
 import wrapParseMachine, { type parseMachine } from "./parseMachine";
 import { token, tokenType } from "./tokenize";
 
-const graphemes = ["...", "#!", "//", "/*", "*/", "[]", "++", "--", "+=", "-=", "==", "!=", ">=", "<=", "<<", ">>", "<<=", "/=", "*=", "&&", "||"];
+const graphemes = ["...", "#!", "//", "/*", "*/", "[]", "++", "--", "+=", "-=", "==", "!=", ">=", "<=", "<<", ">>", "<<=", "/=", "%=", "*=", "&&", "||"];
 
 export default function graphemizer(tokenizer: parseMachine<token>): parseMachine<token> {
 	var tokenBuffer: token[] = [];
@@ -21,13 +21,10 @@ export default function graphemizer(tokenizer: parseMachine<token>): parseMachin
 				var noMatch = true;
 				var singularMatch = true;
 				for (var grapheme of graphemes) {
-					if (!grapheme.startsWith(graphemeBuffer))
-						continue;
-					if (!noMatch)
-						singularMatch = false;
+					if (!grapheme.startsWith(graphemeBuffer)) continue;
+					if (!noMatch) singularMatch = false;
 					noMatch = false;
-					if (grapheme == graphemeBuffer)
-						lastMatch = grapheme;
+					if (grapheme == graphemeBuffer) lastMatch = grapheme;
 				}
 				if (noMatch) {
 					if (lastMatch) {

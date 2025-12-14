@@ -7,18 +7,18 @@ export default <sublexer> {
 	name: "comment_single",
 	isStartingToken: (tok: token) => (tok.type == tokenType.grapheme && tok.value == "//"),
 	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.single_comment, startingToken, [
+		var retval = new lexicon(lexiconType.single_comment, startingToken, [
 			startingToken
 		]);
 
 		while (tokenizer.hasNext()) {
 			var tok = tokenizer.next();
-			retToken.children.push(tok);
+			retval.children.push(tok);
 			if (tok.type == tokenType.newline)
 				break;
 		}
 		
-		retToken.complete = true;
-		return retToken;
+		retval.complete = true;
+		return retval;
 	}
 };

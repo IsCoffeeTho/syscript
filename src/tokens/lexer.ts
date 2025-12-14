@@ -1,4 +1,4 @@
-import { tokenType, unknownToken, type token } from "./tokenize";
+import { tokenType, type token } from "./tokenize";
 import type { parseMachine } from "./parseMachine";
 
 export enum lexiconType {
@@ -6,8 +6,9 @@ export enum lexiconType {
 	boolean_literal,
 	string_literal,
 	character_literal,
-	integer_literal,
+	number_literal,
 	float_literal,
+	array_literal,
 	primitive,
 	reference,
 	subreference,
@@ -20,10 +21,18 @@ export enum lexiconType {
 	assignment_operator,
 	parenthesis_enclosed,
 	ternary,
+	declaration,
 	if_statement,
+	switch_statement,
+	for_loop,
+	while_loop,
+	control_flow,
+	return_statement,
 	function,
-	code_block,
 	type_sig,
+	type_cast,
+	code_block,
+	call,
 	class_def,
 	struct_def,
 	parameter,
@@ -38,12 +47,11 @@ export enum lexiconType {
 	shebang,
 }
 
-export class lexicon<C = (token | lexicon<any>)[]> {
+export class lexicon<C = any> {
 	children: C;
 	complete: boolean = false;
 	col: number;
 	line: number;
-	size: number = 0;
 	constructor(
 		public type: lexiconType,
 		startingToken: token | lexicon,
@@ -54,9 +62,6 @@ export class lexicon<C = (token | lexicon<any>)[]> {
 		this.children = children ?? <any>{};
 	}
 }
-
-const unknownLexicon = new lexicon(lexiconType.unknown, unknownToken, []);
-export { unknownLexicon };
 
 lexicon.prototype.toString = function () {
 	var header = `Lexicon <${lexiconType[this.type]}> ${this.line}:${this.col}`;
@@ -81,7 +86,7 @@ lexicon.prototype.toString = function () {
 			header += childStr.replace(/\n/g, "\n│   ");
 		}
 	}
-	header += `\n└ < ${this.complete ? "Complete" : "Incomplete !!!"}`;
+	header += `\n└ < ${this.complete ? "Complete" : "Incomplete !!! -----------------------------------------------------------"}`;
 	return header;
 };
 
@@ -96,10 +101,11 @@ import classes from "./sublex/classes";
 import shebang from "./sublex/comments/shebang";
 import comments from "./sublex/comments/comments";
 import wrapParseMachine from "./parseMachine";
+import declaration from "./sublex/statements/declaration";
 
-const documentLevelLexers: sublexer[] = [functions, structs, classes, comments, shebang];
+const documentLevelLexers: sublexer[] = [functions, structs, classes, comments, shebang, declaration];
 
-export default function lexer(filename: string, tokenizer: parseMachine<token>): parseMachine<lexicon | token> {
+export default function lexer(tokenizer: parseMachine<token>): parseMachine<lexicon | token> {
 	return wrapParseMachine<lexicon | token>({
 		consume() {
 			while (tokenizer.hasNext()) {

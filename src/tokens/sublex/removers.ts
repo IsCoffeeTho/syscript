@@ -1,4 +1,3 @@
-import type { lexicon } from "../lexer";
 import type { parseMachine } from "../parseMachine";
 import { tokenType, type token } from "../tokenize";
 import comments from "./comments/comments";
@@ -28,6 +27,8 @@ export function nextAfterWSC(tokenizer: parseMachine<token>): token {
 	while (tokenizer.hasNext()) {
 		var tok = tokenizer.next();
 		if (tok.type == tokenType.whitespace)
+			continue;
+		if (tok.type == tokenType.newline)
 			continue;
 		if (comments.isStartingToken(tok)) {
 			comments.lexer(tok, tokenizer);

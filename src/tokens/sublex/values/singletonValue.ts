@@ -3,46 +3,68 @@ import type { parseMachine } from "../../parseMachine";
 import { tokenType, type token } from "../../tokenize";
 import primitive from "../primitives/primitive";
 import { nextAfterWSC } from "../removers";
+import accessor from "./accessor";
+import funcCall from "./funcCall";
 import parenthEnclosed from "./parenthEnclosed";
-import reference from "./reference";
+import subReference from "./subReference";
+import typeCast from "./typeCast";
+
+var prefix = (tok: token) => {
+	if (tok.type == tokenType.symbol && (tok.value == "!" || tok.value == "~" || tok.value == "-")) return true;
+	return false;
+};
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => {
-		if (tok.type == tokenType.symbol && (tok.value == "!" || tok.value == "~")) return true;
+		if (prefix(tok) || typeCast.isStartingToken(tok)) return true;
 		if (tok.type == tokenType.grapheme && (tok.value == "++" || tok.value == "--")) return true;
 		if (parenthEnclosed.isStartingToken(tok)) return true;
 		if (primitive.isStartingToken(tok)) return true;
-		if (reference.isStartingToken(tok)) return true;
+		if (tok.type == tokenType.identifier) return true;
 		return false;
 	},
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
-		var retToken = new lexicon(lexiconType.singleton_value, tok, {
-			prefix: <token | undefined>undefined,
-			component: <lexicon | undefined>undefined,
-			suffix: <token | undefined>undefined,
+		var retval = new lexicon(lexiconType.singleton_value, tok, {
+			prefixes: <(lexicon | token)[]>[],
+			component: <lexicon | token | undefined>undefined,
+			suffixes: <(lexicon | token)[]>[],
 		});
 
-		if (
-			(tok.type == tokenType.symbol && (tok.value == "!" || tok.value == "~")) ||
-			(tok.type == tokenType.grapheme && (tok.value == "++" || tok.value == "--"))
-		) {
-			retToken.children.prefix = tok;
-			tok = tokenizer.next();
-		}
-
-		if (parenthEnclosed.isStartingToken(tok)) retToken.children.component = parenthEnclosed.lexer(tok, tokenizer);
-		else if (primitive.isStartingToken(tok)) retToken.children.component = primitive.lexer(tok, tokenizer);
-		else if (reference.isStartingToken(tok)) retToken.children.component = reference.lexer(tok, tokenizer);
-		else return retToken;
+		if (typeCast.isStartingToken(tok)) {
+			retval.children.prefixes = [typeCast.lexer(tok, tokenizer)];
+		} else if (tok.type == tokenType.grapheme && (tok.value == "++" || tok.value == "--")) {
+			retval.children.prefixes = [tok];
+		} else
+			while (prefix(tok)) {
+				retval.children.prefixes.push(tok);
+				tok = tokenizer.next();
+			}
 		
-		tok = tokenizer.next();
+
+		if (parenthEnclosed.isStartingToken(tok)) retval.children.component = parenthEnclosed.lexer(tok, tokenizer);
+		else if (primitive.isStartingToken(tok)) retval.children.component = primitive.lexer(tok, tokenizer);
+		else if (tok.type == tokenType.identifier) retval.children.component = tok;
+		else return retval;
+
+		tok = nextAfterWSC(tokenizer);
+
+		while (subReference.isStartingToken(tok) || accessor.isStartingToken(tok) || funcCall.isStartingToken(tok)) {
+			if (accessor.isStartingToken(tok))
+				retval.children.suffixes.push(accessor.lexer(tok, tokenizer));
+			if (funcCall.isStartingToken(tok))
+				retval.children.suffixes.push(funcCall.lexer(tok, tokenizer));
+			if (subReference.isStartingToken(tok))
+				retval.children.suffixes.push(subReference.lexer(tok, tokenizer));
+			tok = nextAfterWSC(tokenizer);
+		}
+		
 		if (tok.type == tokenType.grapheme && (tok.value == "++" || tok.value == "--")) {
-			retToken.children.suffix = tok;
+			retval.children.suffixes.push(tok);
 		} else {
 			tokenizer.push(tok);
 		}
 
-		retToken.complete = true;
-		return retToken;
+		retval.complete = true;
+		return retval;
 	},
 };

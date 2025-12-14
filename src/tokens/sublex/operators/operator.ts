@@ -1,4 +1,4 @@
-import { lexicon, lexiconType, type sublexer } from "../../lexer";
+import { type sublexer } from "../../lexer";
 import type { parseMachine } from "../../parseMachine";
 import { type token } from "../../tokenize";
 import arithmeticOperator from "./arithmeticOperator";
@@ -19,6 +19,6 @@ export default <sublexer>{
 		if (comparativeOperator.isStartingToken(tok)) return comparativeOperator.lexer(tok, tokenizer);
 		if (arithmeticOperator.isStartingToken(tok)) return arithmeticOperator.lexer(tok, tokenizer);
 		if (assignmentOperator.isStartingToken(tok)) return assignmentOperator.lexer(tok, tokenizer);
-		return;
+		return tok;
 	},
 };

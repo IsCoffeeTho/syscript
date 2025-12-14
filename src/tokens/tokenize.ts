@@ -20,8 +20,6 @@ const tokenTypeRegExp = {
 	[tokenType.symbol]: /^([\-\[\]\{\}\(\)\\\/\+\=!\@\#\$\%\^\&\*\`\~\"\'\:\;\,\.\<\>\?\|])$/g,
 };
 
-const keywords = ["if", "else", "true", "false", "let", "fn", "return", "const", "class", "super", "extends", "struct", "import", "export", "implements"];
-
 export class token {
 	type: tokenType = tokenType.unknown;
 	value: string = "";
@@ -35,9 +33,6 @@ export class token {
 token.prototype.toString = function () {
 	return `Token ${JSON.stringify(this.value)} <${tokenType[this.type]}> ${this.line}:${this.col}`;
 };
-
-const unknownToken = new token(0, 0, 0);
-export { unknownToken };
 
 export default function tokenize(file: Buffer): parseMachine<token> {
 	var head = 0;
@@ -106,9 +101,8 @@ export default function tokenize(file: Buffer): parseMachine<token> {
 				tok.value += c;
 				continue;
 			}
-			var poppingToken = tok;
-			if (poppingToken.type == tokenType.identifier && keywords.indexOf(poppingToken.value) != -1) poppingToken.type = tokenType.keyword;
 			lastChar = c;
+			var poppingToken = tok;
 			tok = new token(head, line, col);
 			return poppingToken;
 		}
