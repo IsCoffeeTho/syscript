@@ -31,17 +31,16 @@ export default <sublexer>{
 		
 		var retval: lexicon;
 		
-		if (value.isStartingToken(tok)) {
-			retval = value.lexer(tok, tokenizer);
-			tok = nextAfterWSC(tokenizer);
-		} else if (controlFlow.isStartingToken(tok)) {
+		if (controlFlow.isStartingToken(tok)) {
 			retval = controlFlow.lexer(tok, tokenizer);
 			tok = nextAfterWSC(tokenizer);
 		} else if (returnStatement.isStartingToken(tok)) {
 			retval = returnStatement.lexer(tok, tokenizer);
 			tok = nextAfterWSC(tokenizer);
-		}
-		else
+		} else if (value.isStartingToken(tok)) {
+			retval = value.lexer(tok, tokenizer);
+			tok = nextAfterWSC(tokenizer);
+		} else
 			return tok;
 		
 		retval.complete = (tok.type == tokenType.symbol && tok.value == ";");

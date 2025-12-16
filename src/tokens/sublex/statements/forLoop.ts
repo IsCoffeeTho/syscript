@@ -8,7 +8,7 @@ import value from "../values/value";
 import declaration from "./declaration";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.keyword && tok.value == "for",
+	isStartingToken: (tok: token) => tok.type == tokenType.identifier && tok.value == "for",
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.for_loop, tok, {
 			start: tok,

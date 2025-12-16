@@ -5,7 +5,7 @@ import { nextAfterWSC } from "../removers";
 import value from "../values/value";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => (tok.type == tokenType.keyword && tok.value == "return"),
+	isStartingToken: (tok: token) => (tok.type == tokenType.identifier && tok.value == "return"),
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.if_statement, tok, {
 			start: tok,

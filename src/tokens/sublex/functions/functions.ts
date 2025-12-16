@@ -7,7 +7,7 @@ import { nextAfterWSC } from "../removers";
 import paramList from "./paramList";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.keyword && tok.value == "fn",
+	isStartingToken: (tok: token) => tok.type == tokenType.identifier && tok.value == "fn",
 	lexer: (startingToken: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.function, startingToken, {
 			name: <token | undefined>undefined,

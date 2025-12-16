@@ -4,7 +4,7 @@ import { tokenType, type token } from "../tokenize";
 
 export default <sublexer>{
 	name: "struct",
-	isStartingToken: (tok: token) => tok.type == tokenType.keyword && tok.value == "struct",
+	isStartingToken: (tok: token) => tok.type == tokenType.identifier && tok.value == "struct",
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		return new lexicon(lexiconType.struct_def, tok);
 	},

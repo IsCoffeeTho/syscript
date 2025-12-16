@@ -10,30 +10,9 @@ type optionDescriptor = RequireAtLeastOne<{
 }> &
 {
 	description: string,
+	args?: string[],
 	trigger: (...varg: string[]) => any
 };
-
-function reflectParameters(fn: Function): string[] {
-	const fnString = fn.toString();
-	const parametersBeginIdx = fnString.indexOf('(');
-	const parametersEndIdx = fnString.indexOf(')');
-	if (parametersBeginIdx == -1 || parametersEndIdx == -1)
-		return [];
-	const parameterString = fnString.slice(parametersBeginIdx + 1, parametersEndIdx)
-	if (!parameterString.length)
-		return [];
-	const parameterStrings = parameterString.split(',');
-	var parameter_retval: string[] = [];
-	for (var paramString of parameterStrings) {
-		const typeSeperator = paramString.indexOf(':');
-		if (typeSeperator != -1) paramString = paramString.slice(0, typeSeperator);
-		if (paramString.at(-1) == "?")
-			paramString = paramString.slice(0, -1);
-		parameter_retval.push(paramString.trim());
-	}
-
-	return parameter_retval;
-}
 
 export default function parseArguments(progName: string, options: optionDescriptor[], defaultTrigger: (arg: string) => any) {
 	options.push(
@@ -44,7 +23,7 @@ export default function parseArguments(progName: string, options: optionDescript
 			trigger() {
 				console.log(`${progName} [options] <inputfiles>\n`);
 				for (var option of options) {
-					var optionsParameters = reflectParameters(option.trigger);
+					var optionsParameters = option.args ?? [];
 					if (option.flag) console.log(`  ${progName} --${option.flag} ${optionsParameters.map((v) => `<${v}>`).join(" ")}`);
 					if (option.parameter) console.log(`  ${progName} --${option.parameter} ${optionsParameters.map((v) => `<${v}>`).join(" ")}`);
 					console.log(`    ${option.description.trim()}\n`);
@@ -82,7 +61,7 @@ export default function parseArguments(progName: string, options: optionDescript
 					return v.flag == arg[1]
 				})
 			if (option) {
-				var params = reflectParameters(option.trigger);
+				var params = option.args ?? [];
 				var provide: string[] = [];
 				for (var param of params) {
 					var provided = args[++idx];

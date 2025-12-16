@@ -6,7 +6,7 @@ import typeSignature from "../typeSignature";
 import value from "../values/value";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.keyword && (tok.value == "let" || tok.value == "const"),
+	isStartingToken: (tok: token) => tok.type == tokenType.identifier && (tok.value == "let" || tok.value == "const"),
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.declaration, tok, {
 			start: tok,

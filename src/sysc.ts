@@ -4,18 +4,24 @@ import compilerError, { errorLevel } from "./errors/compiler.ts";
 import tokenize, { token } from "./tokens/tokenize.ts";
 import lexer from "./tokens/lexer.ts";
 import graphemizer from "./tokens/grapheme.ts";
-import keywordizer from "./tokens/keywords.ts";
-import sysLSP from "./lsp/lsp.ts";
+import startLSP, { type LspOptions } from "./lsp/startlsp.ts";
+import type { CompilerOptions } from "./compiler/compiler.ts";
+import compiler from "./compiler/compiler.ts";
 
-var inputFiles: string[] = [];
-var outputFile = "a.out";
-var lspConfig = `${process.env["HOME"]}/.config/syscript/lsp.config`
+var lspMode = false;
 
-var debugError = false;
-var startLSP = false;
+var compilerOptions: CompilerOptions = {
+	debugError: false,
+	inputFiles: <string[]>[],
+	outputFile: "a.out",
+};
+
+var lspOptions: LspOptions = {
+	logFile: `${process.env["HOME"]}/.var/sysc-lsp.log`
+};
 
 parseArguments(
-	pkg.name,
+	"sysc",
 	[
 		{
 			parameter: "version",
@@ -28,81 +34,43 @@ parseArguments(
 		},
 		{
 			parameter: "lsp",
-			description: "Runs the LSP for in editor errors and assistance",
+			description: "Runs the LSP for in editor errors and assistance.",
 			trigger() {
-				startLSP = true;
-			}
+				lspMode = true;
+			},
 		},
 		{
-			parameter: "lsp-config",
-			description: "Runs the LSP for in editor errors and assistance",
+			parameter: "log-file",
+			description: "(requires: --lsp) sets the log file of the lsp.",
+			args: ["file"],
 			trigger(file: string) {
-				lspConfig = file;
-			}
+				lspOptions.logFile = file;
+			},
 		},
 		{
 			parameter: "output",
 			flag: "o",
 			description: "Set where the compiled output should be saved.",
+			args: ["file"],
 			trigger(file: string) {
-				outputFile = file;
+				compilerOptions.outputFile = file;
 			},
 		},
 		{
 			parameter: "debug-compilation",
-			description: "",
+			description: "Provide error information about the compiling process.",
 			trigger() {
-				debugError = true;
+				compilerOptions.debugError = true;
 			},
 		},
 	],
 	arg => {
-		inputFiles.push(arg);
+		compilerOptions.inputFiles.push(arg);
 	},
 );
 
-if (startLSP) {
-	const lsp = new sysLSP(lspConfig);
+if (lspMode) {
+	startLSP(lspOptions);
 } else {
-	try {
-		if (!inputFiles.length) {
-			throw new compilerError({
-				message: `Missing input files.`,
-				level: errorLevel.error
-			});
-		}
-
-		var waitFor = [];
-		for (var filename of inputFiles)
-			waitFor.push(
-				(async () => {
-					console.log(filename);
-					var file = Bun.file(filename);
-					if (!(await file.exists()))
-						throw new compilerError({
-							message: `Cannot read "${filename}", file does not exist.`,
-							level: errorLevel.error
-						});
-					var buf = await file.bytes();
-					var tokenizer = tokenize(Buffer.from(buf));
-					tokenizer = keywordizer(tokenizer);
-					tokenizer = graphemizer(tokenizer);
-					var doc = lexer(tokenizer);
-					while (doc.hasNext()) {
-						console.log(`${doc.next()}`);
-					}
-				})(),
-			);
-		await Promise.all(waitFor);
-	} catch (err) {
-		if (err instanceof compilerError) {
-			console.log(err.toString());
-		}
-		else {
-			console.error("There was an unexpected error.");
-			!debugError ? console.error("Add --debug-compilation to see the error") : console.error(err);
-		}
-		process.stderr.write("compilation terminated.\n");
-		process.exit(1);
-	}
+	compiler(compilerOptions);
 }

@@ -7,7 +7,7 @@ import parenthEnclosed from "../values/parenthEnclosed";
 import statement from "./statement";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.keyword && tok.value == "while",
+	isStartingToken: (tok: token) => tok.type == tokenType.identifier && tok.value == "while",
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.while_loop, tok, {
 			start: tok,

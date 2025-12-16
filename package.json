@@ -1,16 +1,16 @@
 {
 	"name": "syscript",
 	"version": "0.0.1",
-	"private": true,
-	"scripts": {
-		"start": "bun run src/sysc.ts",
-		"build": "bun run build-sysc",
-		"build-sysc": "bun build --minify --sourcemap --outfile=sysc --compile src/sysc.ts"
-	},
 	"devDependencies": {
 		"@types/bun": "latest"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
+	},
+	"private": true,
+	"scripts": {
+		"start": "bun run src/sysc.ts",
+		"build": "bun run build-sysc",
+		"build-sysc": "bun build --minify --sourcemap --production --outfile=sysc --keep-names --compile src/sysc.ts"
 	}
 }

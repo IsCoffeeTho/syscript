@@ -7,7 +7,7 @@ import parenthEnclosed from "../values/parenthEnclosed";
 import statement from "./statement";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => (tok.type == tokenType.keyword && tok.value == "if"),
+	isStartingToken: (tok: token) => (tok.type == tokenType.identifier && tok.value == "if"),
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.if_statement, tok, {
 			start: tok,
@@ -29,7 +29,7 @@ export default <sublexer>{
 			return retval;
 		
 		tok = nextAfterWSC(tokenizer);
-		if (tok.type != tokenType.keyword || tok.value != "else") {
+		if (tok.type != tokenType.identifier || tok.value != "else") {
 			tokenizer.push(tok);
 			retval.complete = true;
 			return retval;

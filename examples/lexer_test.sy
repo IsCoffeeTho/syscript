@@ -1,5 +1,10 @@
 let mutable: uint64 = 0;
 
+struct Person {
+	name: string;
+	pet: Animal;
+}
+
 class Animal {
 	name: string;
 	sound: string;
@@ -19,26 +24,21 @@ class Dog extends Animal {
 	}
 }
 
-struct Person {
-	name: string;
-	pet: Animal;
-}
-
 fn play_with_pet(of: Person): void {
-	let announcement: string = of.name;
+	let announcement: string;
+	announcement = of.name;
 	announcement += " is petting";
 	announcement += of.pet.name;
 	print(announcement);
 	of.pet.speak();
 }
 
-/**/
 fn main() {
 	let friend: Person = new Person();
 	if (friend == null)
 		return;
 	friend.name = "John";
-	friend.pet = new Dog("Spot");s
+	friend.pet = new Dog("Spot");
 	play_with_pet(friend);
 	/*
 		John is petting Spot
