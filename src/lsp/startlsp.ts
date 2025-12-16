@@ -8,11 +8,35 @@ export type LspOptions = {
 export default function startLSP(opt: LspOptions) {
 	logger(opt.logFile);
 	const syscriptLSP = new LSP();
+	
+	syscriptLSP.register("error", (data, res) => {
+		console.error(data);
+	});
+	
+	syscriptLSP.register("initialized", (data, res) => {
+		syscriptLSP.send({
+			method: "window/showMessage",
+			params: {
+				type: 3,
+				message: "Ready!"
+			}
+		});
+		res.send({});
+	});
 
 	syscriptLSP.register("initialize", (data, res) => {
-		console.log("INIT", data);
-		
-		return res.send({});
+		res.send({
+			capabilities: {
+				textDocumentSync: {
+					openClose: true,
+					change: true
+				}
+			},
+			serverInfo: {
+				name: "sysc-lsp",
+				version: `0.0.1`
+			}
+		});
 	});
 
 	syscriptLSP.begin();

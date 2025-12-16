@@ -10,17 +10,20 @@ type LSPRequest = {
 
 export class LSPResponse {
 	public readonly id?: string | number | null;
-	constructor(private parent: LSP, request: LSPRequest) {
+	constructor(
+		private parent: LSP,
+		request: LSPRequest,
+	) {
 		this.id = request.id;
 	}
-	
+
 	send(data: any) {
 		this.parent.send({
 			id: this.id,
-			params: data,
+			result: data,
 		});
 	}
-	
+
 	throw(code: number, message: string, data?: any) {
 		this.parent.send({
 			id: this.id,
@@ -28,7 +31,7 @@ export class LSPResponse {
 				code,
 				message,
 				data,
-			}
+			},
 		});
 	}
 }
@@ -37,6 +40,7 @@ export type LSPMethodHandler<T extends any> = (params: T, res: LSPResponse) => a
 
 export default class LSP {
 	#route: { [method: string]: LSPMethodHandler<any> } = {};
+	#responseQueue: { [id: string]: LSPRequest } = {};
 	constructor() {}
 
 	register<T extends any>(method: string, routine: LSPMethodHandler<T>) {
@@ -45,60 +49,106 @@ export default class LSP {
 
 	async begin() {
 		process.stdin.on("data", buf => {
-			try {
-				let [headerPart, ...bodyParts] = buf.toString().split("\r\n\r\n");
-				let body = bodyParts.join("\r\n\r\n");
-				let headers: { [_: string]: string } = {};
-				(<string>headerPart).split("\r\n").forEach((line, i, a) => {
-					var sep = line.indexOf(": ");
-					if (sep == -1) throw `Bad Header line ${i + 1}.`;
-					var key = line.slice(0, sep);
-					var value = line.slice(sep + 2).trim();
-					headers[key] = value;
-				});
+			let dataBuf = buf.toString();
+			while (dataBuf.length > 0) {
+				try {
+					let [headerPart, ...contentParts] = dataBuf.split("\r\n\r\n");
+					let content = contentParts.join("\r\n\r\n");
+					let headers: { [_: string]: string } = {};
+					(<string>headerPart).split("\r\n").forEach((line, i, a) => {
+						var sep = line.indexOf(": ");
+						if (sep == -1) throw `Bad Header line ${i + 1}.`;
+						var key = line.slice(0, sep);
+						var value = line.slice(sep + 2).trim();
+						headers[key] = value;
+					});
 
-				if (!headers["Content-Length"]) throw "Missing Content-Length header.";
+					if (!headers["Content-Length"]) throw "Missing Content-Length header.";
+					var contentLength = parseInt(headers["Content-Length"]);
+					if (Number.isNaN(contentLength)) throw "Invalid Content-Length header.";
+					if (content.length < contentLength) throw "Bad Length";
+					dataBuf = content.slice(contentLength);
+					content = content.slice(0, contentLength);
+					var body = JSON.parse(content);
 
-				var contentLength = parseInt(headers["Content-Length"]);
+					if (body.jsonrpc != "2.0")
+						this.send({
+							error: {
+								code: -32601,
+								message: "Method not found",
+							},
+						});
 
-				if (Number.isNaN(contentLength)) throw "Invalid Content-Length header.";
-				if (body.length < contentLength) throw "Bad Length";
-				if (body.length > contentLength) body = body.slice(contentLength);
-				var packet = JSON.parse(body);
-				
-				if (packet.id == undefined)
-					packet.id = null;
-				
-				if (packet.method == undefined)
-					throw "Missing method.";
-				if (typeof packet.method != "string")
-					throw "Invalid method.";
-				
-				if (!this.#route[packet.method]) {
+					if (body.id == undefined) body.id = null;
+
+					if (body.error != undefined) {
+						body.method = "error";
+						body.params = body.error;
+					}
+
+					if (body.method == undefined) throw "Missing method.";
+					if (typeof body.method != "string") throw "Invalid method.";
+
+					console.log("RX", body.method);
+
+					if (!this.#route[body.method]) {
+						console.log("NO ROUTE");
+						this.send({
+							error: {
+								code: -32601,
+								message: "Method not found",
+							},
+						});
+						return;
+					}
+					
+					console.log("Passing to route.");
+					const res = new LSPResponse(this, body);
+					try {
+						(<LSPMethodHandler<any>>this.#route[body.method])(body.params, res);
+						console.log("done");
+					} catch (err: any) {
+						console.error(err);
+						this.send({
+							error: {
+								code: -32603,
+								message: `Internal Error: ${err.message ?? err}`,
+							},
+						});
+						return;
+					}
+				} catch (err: any) {
+					console.log(err);
 					this.send({
 						error: {
-							code: -32601,
-							message: "Method not found",
-						}
-					})
-					return;
+							code: -32700,
+							message: `Parsing Error: ${err}`,
+						},
+					});
 				}
-			} catch (err: any) {
-				this.send({
-					error: {
-						code: -32700,
-						message: `Parsing Error: ${err}`,
-					},
-				});
 			}
-			
 		});
+	}
+
+	async request(method: string, params: any) {
+		const idBucket = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		const id = ".".repeat(32).replace(/./g, _ => <string>idBucket[Math.floor(Math.random() * idBucket.length)]);
+		this.send({
+			jsonrpc: "2.0",
+			id,
+			method,
+			params,
+		});
+		while (!this.#responseQueue[id])
+			await Bun.sleep(0);
+		return this.#responseQueue[id];
 	}
 
 	send(packet: any) {
 		var body = JSON.stringify(packet);
 		var headers = `Content-Length: ${body.length}\r\nContent-Type: application/vscode-jsonrpc; charset=utf-8\r\n`;
-
+		console.log("TX", packet);
 		process.stdout.write(`${headers}\r\n${body}`);
 	}
+	
 }
