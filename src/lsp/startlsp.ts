@@ -1,5 +1,6 @@
 import logger from "./logger";
 import LSP from "./LSP";
+import { TextDocumentSyncKind } from "./methods";
 
 export type LspOptions = {
 	logFile: string;
@@ -30,7 +31,7 @@ export default function startLSP(opt: LspOptions) {
 			capabilities: {
 				textDocumentSync: {
 					openClose: true,
-					change: true,
+					change: TextDocumentSyncKind.Incremental,
 				},
 			},
 			serverInfo: {

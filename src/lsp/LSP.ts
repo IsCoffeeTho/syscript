@@ -10,7 +10,7 @@ type LSPRequest = {
 	};
 };
 
-export class LSPResponse {
+export class LSPResponse<P extends any> {
 	public readonly id?: string | number | null;
 	constructor(
 		private parent: LSP,
@@ -19,7 +19,7 @@ export class LSPResponse {
 		this.id = request.id;
 	}
 
-	send(data: any) {
+	send(data: P) {
 		this.parent.send({
 			id: this.id,
 			result: data,
@@ -38,20 +38,20 @@ export class LSPResponse {
 	}
 }
 
-export type LSPMethodHandler<T extends any> = (params: T, res: LSPResponse) => any;
+export type LSPMethodHandler<P extends any, R extends any> = (params: P, res: LSPResponse<R>) => any;
 
 export default class LSP {
-	#route: { [method: string]: LSPMethodHandler<any> } = {};
+	#route: { [method: string]: LSPMethodHandler<any, any> } = {};
 	#requestQueue: { [id: string]: boolean } = {};
 	#responseQueue: { [id: string]: LSPRequest } = {};
-	#onerror: LSPMethodHandler<{ code: number; data: any }> = err => console.error;
+	#onerror: LSPMethodHandler<{ code: number; data: any }, any> = err => console.error;
 	constructor() {}
 
-	register<K extends keyof registerMap>(method: K, routine: LSPMethodHandler<registerMap[K]>) {
+	register<K extends keyof registerMap>(method: K, routine: LSPMethodHandler<registerMap[K][0], registerMap[K][1]>) {
 		this.#route[method] = routine;
 	}
 
-	onError<T extends any>(routine: LSPMethodHandler<{ code: number; data: T }>) {}
+	onError<T extends any>(routine: LSPMethodHandler<{ code: number; data: T }, {}>) {}
 
 	async begin() {
 		process.stdin.on("data", buf => {
@@ -111,7 +111,7 @@ export default class LSP {
 
 					const res = new LSPResponse(this, body);
 					try {
-						(<LSPMethodHandler<any>>this.#route[body.method])(body.params, res);
+						(<LSPMethodHandler<any, any>>this.#route[body.method])(body.params, res);
 					} catch (err: any) {
 						console.error(err);
 						this.send({

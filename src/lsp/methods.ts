@@ -1,6 +1,6 @@
 export type registerMap = {
-	initialize: InitializeParams;
-	initialized: {};
+	initialize: [InitializeParams, InitializeResponse];
+	initialized: [{}, {}];
 };
 
 export type ResourceOperationKind = "create" | "rename" | "delete";
@@ -42,6 +42,11 @@ export enum SymbolTag {
 }
 
 export type MarkupKind = "markdown" | "plaintext";
+
+export enum CompletionItemTag {
+	Unknown,
+	Deprecated,
+}
 
 export enum InsertTextMode {
 	Unknown,
@@ -94,6 +99,8 @@ export enum DiagnosticTag {
 export type FoldingRangeKind = "comment" | "imports" | "region";
 
 export type TokenFormat = "relative";
+
+export type PositionEncodingKind = "utf-8" | "utf-16" | "utf-32";
 
 export type ClientCapabilities = {
 	workspace?: {
@@ -351,22 +358,40 @@ export type ClientCapabilities = {
 			dataSupport?: boolean;
 		};
 	};
-	textDocument?: {
+	notebookDocument?: {
 		synchronization?: {
 			dynamicRegistration?: boolean;
-			// spec/#textDocumentSyncCapabilities
+			executionSummarySupport?: boolean;
 		};
-		// spec/#textDocumentClientCapabilities
 	};
-	// spec/#clientCapabilities
 	window: {
 		workDoneProgress?: boolean;
-		showMessage: {};
+		showMessage?: {
+			messageActionItem?: {
+				additionalPropertiesSupport?: boolean;
+			};
+		};
+		showDocument?: {
+			support?: boolean;
+		};
 	};
 	general: {
-		positionEncodings: "utf-16"[];
+		staleRequestSupport?: {
+			cancel?: boolean;
+			retryOnContentModified: string[];
+		};
+		regularExpressions?: {
+			engine: string;
+			version?: string;
+		};
+		markdown?: {
+			parser: string;
+			version?: string;
+			allowedTags?: string[];
+		};
+		positionEncodings: PositionEncodingKind[];
 	};
-	experimental: {
+	experimental?: {
 		serverStatusNotification?: boolean;
 		localDocs?: boolean;
 	};
@@ -374,7 +399,7 @@ export type ClientCapabilities = {
 
 export type TraceValue = "off" | "messages" | "verbose";
 
-export type InitializeMessage = {
+export type InitializeParams = {
 	processId: number | null;
 	locale?: string;
 	rootPath?: string | null;
@@ -387,6 +412,182 @@ export type InitializeMessage = {
 		name?: string;
 	}[];
 	clientInfo: {
+		name: string;
+		version?: string;
+	};
+};
+
+export enum TextDocumentSyncKind {
+	None,
+	Full,
+	Incremental,
+}
+
+export type WorkDoneProgressOptions = {
+	workDoneProgress?: boolean;
+};
+
+export type StaticRegistrationOptions = {
+	id?: string;
+};
+
+export type NotebookDocumentFilter =
+	| {
+			notebookType: string;
+			scheme?: string;
+			pattern?: string;
+	  }
+	| {
+			notebookType?: string;
+			scheme: string;
+			pattern?: string;
+	  }
+	| {
+			notebookType?: string;
+			scheme?: string;
+			pattern: string;
+	  };
+export type NotebookDocumentSyncOptions = {
+	notebookSelector: (
+		| {
+				notebook: string | NotebookDocumentFilter;
+				cells?: { language: string }[];
+		  }
+		| {
+				notebook?: string | NotebookDocumentFilter;
+				cells: { language: string }[];
+		  }
+	)[];
+	save?: boolean;
+};
+export type NotebookDocumentSyncRegistrationOptions = NotebookDocumentSyncOptions & StaticRegistrationOptions;
+
+export type CompletionOptions = WorkDoneProgressOptions & {
+	triggerCharacters?: string[];
+	allCommitCharacters?: string[];
+	resolveProvider?: boolean;
+	completionItem?: {
+		labelDetailSupport?: boolean;
+	};
+};
+
+export type HoverOptions = WorkDoneProgressOptions;
+
+export type SignatureHelpOptions = WorkDoneProgressOptions & {
+	triggerCharacters?: string[];
+	retriggerCharacters?: string[];
+};
+
+export type DocumentFilter = {
+	language?: string;
+	scheme?: string;
+	pattern?: string;
+};
+export type TextDocumentRegistrationOptions = {
+	documentSelector: DocumentSelector | null;
+};
+export type DocumentSelector = DocumentFilter[];
+
+export type DeclarationRegistrationOptions = DeclarationOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+export type DeclarationOptions = WorkDoneProgressOptions;
+
+export type DefinitionOptions = WorkDoneProgressOptions;
+
+export type TypeDefinitionOptions = WorkDoneProgressOptions;
+export type TypeDefinitionRegistrationOptions = TypeDefinitionOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type ImplementationOptions = WorkDoneProgressOptions;
+export type ImplementationRegistrationOptions = ImplementationOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type ReferenceOptions = WorkDoneProgressOptions;
+
+export type DocumentHighlightOptions = WorkDoneProgressOptions;
+
+export type DocumentSymbolOptions = WorkDoneProgressOptions;
+
+export type CodeActionOptions = WorkDoneProgressOptions & {
+	codeActionsKinds?: CodeActionKind[];
+	resolveProvider?: boolean;
+};
+
+export type CodeLensOptions = WorkDoneProgressOptions & {
+	resolveProvider?: boolean;
+};
+
+export type DocumentLinkOptions = WorkDoneProgressOptions & {
+	resolveProvider?: boolean;
+};
+
+export type DocumentColorOptions = WorkDoneProgressOptions;
+export type DocumentColorRegistrationOptions = DocumentColorOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type DocumentFormattingOptions = WorkDoneProgressOptions;
+
+export type DocumentRangeFormattingOptions = WorkDoneProgressOptions;
+
+export type DocumentOnTypeFormattingOptions = {
+	firstTriggerCharacter?: string;
+	moreTriggerCharacter?: string[];
+};
+
+export type RenameOptions = WorkDoneProgressOptions & {
+	prepareProvider?: boolean;
+};
+
+export type FoldingRangeOptions = WorkDoneProgressOptions;
+export type FoldingRangeRegistrationOptions = FoldingRangeOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type ExecuteCommandOptions = WorkDoneProgressOptions & {
+	commands?: string[];
+};
+
+export type SelectionRangeOptions = WorkDoneProgressOptions;
+export type SelectionRangeRegistrationOptions = SelectionRangeOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type LinkedEditingRangeOptions = WorkDoneProgressOptions;
+export type LinkedEditingRangeRegistrationOptions = LinkedEditingRangeOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type CallHierarchyOptions = WorkDoneProgressOptions;
+export type CallHierarchyRegistrationOptions = CallHierarchyOptions & TextDocumentRegistrationOptions & StaticRegistrationOptions;
+
+export type ServerCapabilities = {
+	positionEncoding?: PositionEncodingKind;
+	textDocumentSync?:
+		| TextDocumentSyncKind
+		| {
+				openClose?: boolean;
+				change?: TextDocumentSyncKind;
+		  };
+	notebookDocumentSync?: NotebookDocumentSyncOptions | NotebookDocumentSyncRegistrationOptions;
+	completionProvider?: CompletionOptions;
+	hoverProvider?: boolean | HoverOptions;
+	signatureHelpProvider?: SignatureHelpOptions;
+	declarationProvider?: boolean | DeclarationOptions | DeclarationRegistrationOptions;
+	definitionProvider?: boolean | DefinitionOptions;
+	typeDefinitionProvider?: boolean | TypeDefinitionOptions | TypeDefinitionRegistrationOptions;
+	implementationProvider?: boolean | ImplementationOptions | ImplementationRegistrationOptions;
+	referencesProvider?: boolean | ReferenceOptions;
+	documentHighlightProvider?: boolean | DocumentHighlightOptions;
+	documentSymbolProvider?: boolean | DocumentSymbolOptions;
+	codeActionProvider?: boolean | CodeActionOptions;
+	codeLensProvider?: CodeLensOptions;
+	documentLinkProvider?: DocumentLinkOptions;
+	colorProvider?: boolean | DocumentColorOptions | DocumentColorRegistrationOptions;
+	documentFormattingProvider?: boolean | DocumentFormattingOptions;
+	documentRangeFormattingProvider?: boolean | DocumentRangeFormattingOptions;
+	documentOnTypeFormattingProvider?: DocumentOnTypeFormattingOptions;
+	renameProvider?: boolean | RenameOptions;
+	foldingRangeProvider?: boolean | FoldingRangeOptions | FoldingRangeRegistrationOptions;
+	executeCommandProvider?: ExecuteCommandOptions;
+	selectionRangeProvider?: boolean | SelectionRangeOptions | SelectionRangeRegistrationOptions;
+	linkedEditingRangeProvider?: boolean | LinkedEditingRangeOptions | LinkedEditingRangeRegistrationOptions;
+	callHierarchyProvider?: boolean | CallHierarchyOptions | CallHierarchyRegistrationOptions;
+	// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#serverCapabilities
+};
+
+export type InitializeResponse = {
+	capabilities: ServerCapabilities;
+	serverInfo?: {
 		name: string;
 		version?: string;
 	};
