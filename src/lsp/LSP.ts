@@ -1,3 +1,5 @@
+import type { registerMap } from "./methods";
+
 type LSPRequest = {
 	id: string | number | null;
 	params?: any;
@@ -40,12 +42,16 @@ export type LSPMethodHandler<T extends any> = (params: T, res: LSPResponse) => a
 
 export default class LSP {
 	#route: { [method: string]: LSPMethodHandler<any> } = {};
+	#requestQueue: { [id: string]: boolean } = {};
 	#responseQueue: { [id: string]: LSPRequest } = {};
+	#onerror: LSPMethodHandler<{ code: number; data: any }> = err => console.error;
 	constructor() {}
 
-	register<T extends any>(method: string, routine: LSPMethodHandler<T>) {
+	register<K extends keyof registerMap>(method: K, routine: LSPMethodHandler<registerMap[K]>) {
 		this.#route[method] = routine;
 	}
+
+	onError<T extends any>(routine: LSPMethodHandler<{ code: number; data: T }>) {}
 
 	async begin() {
 		process.stdin.on("data", buf => {
@@ -80,6 +86,10 @@ export default class LSP {
 						});
 
 					if (body.id == undefined) body.id = null;
+					else if (this.#requestQueue[body.id] == true) {
+						delete this.#requestQueue[body.id];
+						this.#responseQueue[body.id] = body;
+					}
 
 					if (body.error != undefined) {
 						body.method = "error";
@@ -89,10 +99,7 @@ export default class LSP {
 					if (body.method == undefined) throw "Missing method.";
 					if (typeof body.method != "string") throw "Invalid method.";
 
-					console.log("RX", body.method);
-
 					if (!this.#route[body.method]) {
-						console.log("NO ROUTE");
 						this.send({
 							error: {
 								code: -32601,
@@ -101,12 +108,10 @@ export default class LSP {
 						});
 						return;
 					}
-					
-					console.log("Passing to route.");
+
 					const res = new LSPResponse(this, body);
 					try {
 						(<LSPMethodHandler<any>>this.#route[body.method])(body.params, res);
-						console.log("done");
 					} catch (err: any) {
 						console.error(err);
 						this.send({
@@ -139,16 +144,14 @@ export default class LSP {
 			method,
 			params,
 		});
-		while (!this.#responseQueue[id])
-			await Bun.sleep(0);
+		this.#requestQueue[id] = true;
+		while (!this.#responseQueue[id]) await Bun.sleep(0);
 		return this.#responseQueue[id];
 	}
 
 	send(packet: any) {
 		var body = JSON.stringify(packet);
 		var headers = `Content-Length: ${body.length}\r\nContent-Type: application/vscode-jsonrpc; charset=utf-8\r\n`;
-		console.log("TX", packet);
 		process.stdout.write(`${headers}\r\n${body}`);
 	}
-	
 }

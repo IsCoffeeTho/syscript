@@ -2,40 +2,41 @@ import logger from "./logger";
 import LSP from "./LSP";
 
 export type LspOptions = {
-	logFile: string
+	logFile: string;
 };
 
 export default function startLSP(opt: LspOptions) {
 	logger(opt.logFile);
 	const syscriptLSP = new LSP();
-	
-	syscriptLSP.register("error", (data, res) => {
+
+	syscriptLSP.onError((data, res) => {
 		console.error(data);
 	});
-	
+
 	syscriptLSP.register("initialized", (data, res) => {
 		syscriptLSP.send({
 			method: "window/showMessage",
 			params: {
 				type: 3,
-				message: "Ready!"
-			}
+				message: "Ready!",
+			},
 		});
 		res.send({});
 	});
 
 	syscriptLSP.register("initialize", (data, res) => {
+		console.log(data);
 		res.send({
 			capabilities: {
 				textDocumentSync: {
 					openClose: true,
-					change: true
-				}
+					change: true,
+				},
 			},
 			serverInfo: {
 				name: "sysc-lsp",
-				version: `0.0.1`
-			}
+				version: `0.0.1`,
+			},
 		});
 	});
 
