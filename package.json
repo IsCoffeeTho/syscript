@@ -11,6 +11,7 @@
 	"scripts": {
 		"start": "bun run src/sysc.ts",
 		"build": "bun run build-sysc",
-		"build-sysc": "bun build --minify --sourcemap --production --outfile=sysc --keep-names --compile src/sysc.ts"
+		"build-sysc": "bun build --minify --sourcemap --production --outfile=sysc --keep-names --compile src/sysc.ts",
+		"log": "tail -f ./sysc-lsp.log"
 	}
 }

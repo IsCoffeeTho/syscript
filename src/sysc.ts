@@ -4,9 +4,9 @@ import compilerError, { errorLevel } from "./errors/compiler.ts";
 import tokenize, { token } from "./tokens/tokenize.ts";
 import lexer from "./tokens/lexer.ts";
 import graphemizer from "./tokens/grapheme.ts";
-import startLSP, { type LspOptions } from "./lsp/startlsp.ts";
 import type { CompilerOptions } from "./compiler/compiler.ts";
 import compiler from "./compiler/compiler.ts";
+import LSP from "./lsp/LSP.ts";
 
 var lspMode = false;
 
@@ -14,10 +14,6 @@ var compilerOptions: CompilerOptions = {
 	debugError: false,
 	inputFiles: <string[]>[],
 	outputFile: "a.out",
-};
-
-var lspOptions: LspOptions = {
-	logFile: `${process.env["HOME"]}/.var/sysc-lsp.log`
 };
 
 parseArguments(
@@ -37,14 +33,6 @@ parseArguments(
 			description: "Runs the LSP for in editor errors and assistance.",
 			trigger() {
 				lspMode = true;
-			},
-		},
-		{
-			parameter: "log-file",
-			description: "(requires: --lsp) sets the log file of the lsp.",
-			args: ["file"],
-			trigger(file: string) {
-				lspOptions.logFile = file;
 			},
 		},
 		{
@@ -70,7 +58,7 @@ parseArguments(
 );
 
 if (lspMode) {
-	startLSP(lspOptions);
+	LSP();
 } else {
 	compiler(compilerOptions);
 }

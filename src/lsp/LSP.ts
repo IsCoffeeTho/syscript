@@ -1,157 +1,96 @@
-import type { registerMap } from "./methods";
+import { EventEmitter } from "events";
+import RPC, { RpcError, type RPCError, type RPCMessage, type RPCRequest, type RPCResponse } from "./RPC";
+import type { InitailizeMessage, InitializeResponse } from "./types/rpc/initialize";
+import type Workspace from "./types/workspace";
 
-type LSPRequest = {
-	id: string | number | null;
-	params?: any;
-	error?: {
-		code: number;
-		message: string;
-		data: any;
-	};
-};
-
-export class LSPResponse<P extends any> {
-	public readonly id?: string | number | null;
-	constructor(
-		private parent: LSP,
-		request: LSPRequest,
-	) {
+export class LSPResponse<R extends any> {
+	public readonly id;
+	constructor(public readonly request: RPCRequest) {
 		this.id = request.id;
-	}
-
-	send(data: P) {
-		this.parent.send({
-			id: this.id,
-			result: data,
-		});
-	}
-
-	throw(code: number, message: string, data?: any) {
-		this.parent.send({
-			id: this.id,
-			error: {
-				code,
-				message,
-				data,
-			},
-		});
 	}
 }
 
-export type LSPMethodHandler<P extends any, R extends any> = (params: P, res: LSPResponse<R>) => any;
+export type LSPOption = {
+	name: string;
+	version?: string;
+};
 
-export default class LSP {
-	#route: { [method: string]: LSPMethodHandler<any, any> } = {};
-	#requestQueue: { [id: string]: boolean } = {};
-	#responseQueue: { [id: string]: LSPRequest } = {};
-	#onerror: LSPMethodHandler<{ code: number; data: any }, any> = err => console.error;
-	constructor() {}
+export default function LSP(opt: LSPOption) {
+	let providers: { [_: string]: ((..._: any) => any) | null } = {
+		declarationProvider: null,
+		definitionProvider: null,
+	};
+	let workspaces: { [_: string]: Workspace } = {};
 
-	register<K extends keyof registerMap>(method: K, routine: LSPMethodHandler<registerMap[K][0], registerMap[K][1]>) {
-		this.#route[method] = routine;
+	function sendPacket(msg: RPCMessage) {
+		process.stdout.write(RPC.encode(msg));
 	}
 
-	onError<T extends any>(routine: LSPMethodHandler<{ code: number; data: T }, {}>) {}
-
-	async begin() {
-		process.stdin.on("data", buf => {
-			let dataBuf = buf.toString();
-			while (dataBuf.length > 0) {
-				try {
-					let [headerPart, ...contentParts] = dataBuf.split("\r\n\r\n");
-					let content = contentParts.join("\r\n\r\n");
-					let headers: { [_: string]: string } = {};
-					(<string>headerPart).split("\r\n").forEach((line, i, a) => {
-						var sep = line.indexOf(": ");
-						if (sep == -1) throw `Bad Header line ${i + 1}.`;
-						var key = line.slice(0, sep);
-						var value = line.slice(sep + 2).trim();
-						headers[key] = value;
-					});
-
-					if (!headers["Content-Length"]) throw "Missing Content-Length header.";
-					var contentLength = parseInt(headers["Content-Length"]);
-					if (Number.isNaN(contentLength)) throw "Invalid Content-Length header.";
-					if (content.length < contentLength) throw "Bad Length";
-					dataBuf = content.slice(contentLength);
-					content = content.slice(0, contentLength);
-					var body = JSON.parse(content);
-
-					if (body.jsonrpc != "2.0")
-						this.send({
-							error: {
-								code: -32601,
-								message: "Method not found",
-							},
-						});
-
-					if (body.id == undefined) body.id = null;
-					else if (this.#requestQueue[body.id] == true) {
-						delete this.#requestQueue[body.id];
-						this.#responseQueue[body.id] = body;
-					}
-
-					if (body.error != undefined) {
-						body.method = "error";
-						body.params = body.error;
-					}
-
-					if (body.method == undefined) throw "Missing method.";
-					if (typeof body.method != "string") throw "Invalid method.";
-
-					if (!this.#route[body.method]) {
-						this.send({
-							error: {
-								code: -32601,
-								message: "Method not found",
-							},
-						});
-						return;
-					}
-
-					const res = new LSPResponse(this, body);
-					try {
-						(<LSPMethodHandler<any, any>>this.#route[body.method])(body.params, res);
-					} catch (err: any) {
-						console.error(err);
-						this.send({
-							error: {
-								code: -32603,
-								message: `Internal Error: ${err.message ?? err}`,
-							},
-						});
-						return;
-					}
-				} catch (err: any) {
-					console.log(err);
-					this.send({
-						error: {
-							code: -32700,
-							message: `Parsing Error: ${err}`,
-						},
-					});
+	function sendLog(level: number, args: any[]) {
+		let message = args
+			.map(v => {
+				switch (typeof v) {
+					case "object":
+						if (v == null) return `null`;
+						return JSON.stringify(v, null, "  ");
+					default:
+						return `${v}`;
 				}
+			})
+			.join(" ");
+		sendPacket({
+			method: "window/logMessage",
+			params: {
+				type: level,
+				message,
+			},
+		});
+	}
+
+	sendLog(5, [`Started LSP`]);
+	return {
+		logger: {
+			assert(condition: boolean, ...msg: any[]) {
+				if (condition !== false) return;
+				this.error(`Assertion Failed:`, ...msg);
+			},
+			error: (...msg: any[]) => sendLog(1, msg),
+			warn: (...msg: any[]) => sendLog(2, msg),
+			info: (...msg: any[]) => sendLog(3, msg),
+			log: (...msg: any[]) => sendLog(4, msg),
+			debug: (...msg: any[]) => sendLog(5, msg),
+		},
+		onGoToDeclaration(provider: () => any) {
+			providers.declarationProvider = provider;
+		},
+		begin() {
+			let capabilities = {};
+			enum LSPState {
+				uninitialized,
+				initialized,
+				ready,
 			}
-		});
-	}
-
-	async request(method: string, params: any) {
-		const idBucket = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		const id = ".".repeat(32).replace(/./g, _ => <string>idBucket[Math.floor(Math.random() * idBucket.length)]);
-		this.send({
-			jsonrpc: "2.0",
-			id,
-			method,
-			params,
-		});
-		this.#requestQueue[id] = true;
-		while (!this.#responseQueue[id]) await Bun.sleep(0);
-		return this.#responseQueue[id];
-	}
-
-	send(packet: any) {
-		var body = JSON.stringify(packet);
-		var headers = `Content-Length: ${body.length}\r\nContent-Type: application/vscode-jsonrpc; charset=utf-8\r\n`;
-		process.stdout.write(`${headers}\r\n${body}`);
-	}
+			let state = LSPState.uninitialized;
+			process.stdin.on("data", (buf: Buffer) => {
+				let messages = RPC.decode(buf);
+				for (let message of messages) {
+					try {
+						if ((<RPCRequest>message).params) {
+							let msg = <RPCRequest>message;
+							
+						} else if ((<RPCError>message).error) {
+							let msg = <RPCError>message;
+							
+						} else if ((<RPCResponse>message).result) {
+							let msg = <RPCResponse>message;
+							
+						} else throw new RpcError(-32600, "Invalid Request.");
+					} catch (err) {
+						if (!(err instanceof RpcError)) err = new RpcError(-32603, "Internal Server Error");
+						this.logger.error(err);
+					}
+				}
+			});
+		},
+	};
 }
