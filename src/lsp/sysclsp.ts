@@ -9,7 +9,7 @@ export default function sysclsp() {
 	});
 	const logger = lsp.logger;
 	
-	lsp.onGoToDeclaration((params) => {
+	lsp.goToDeclaration(() => {
 		
 	})
 	

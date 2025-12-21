@@ -38,20 +38,18 @@ export class RpcError {
 			.slice(2)
 			.map(v => v.replace(/^\s+at\s+/g, ""));
 	}
+	toJSON() {
+		let retval: any = {
+			code: this.code,
+			message: this.message,
+		};
+		if (this.data) retval.data = this.data;
+		return retval;
+	}
 }
 
 RpcError.prototype.toString = function () {
 	return `RPC Error [${this.code}]: ${this.message}\n${this.stack.map(v => `  at ${v}`).join("\n")}`;
-};
-
-// @ts-ignore
-RpcError.prototype.toJSON = function () {
-	let retval: any = {
-		code: this.code,
-		message: this.message,
-	};
-	if (this.data) retval.data = this.data;
-	return retval;
 };
 
 export default {
@@ -61,9 +59,10 @@ export default {
 			"Content-Length": body.length,
 			"Content-Type": "application/vscode-jsonrpc; charset=utf-8",
 		};
-		return `${Object.keys(headers)
+		let message = `${Object.keys(headers)
 			.map(v => `${v}: ${<string>headers[<keyof typeof headers>v]}`)
 			.join("\r\n")}\r\n\r\n${body}`;
+		return message;
 	},
 	decode(buf: Buffer) {
 		let dataBuffer = buf.toString();

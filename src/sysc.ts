@@ -7,6 +7,7 @@ import graphemizer from "./tokens/grapheme.ts";
 import type { CompilerOptions } from "./compiler/compiler.ts";
 import compiler from "./compiler/compiler.ts";
 import LSP from "./lsp/LSP.ts";
+import sysclsp from "./lsp/sysclsp.ts";
 
 var lspMode = false;
 
@@ -58,7 +59,7 @@ parseArguments(
 );
 
 if (lspMode) {
-	LSP();
+	sysclsp();
 } else {
 	compiler(compilerOptions);
 }
