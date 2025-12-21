@@ -9,7 +9,7 @@ export type CompilerOptions = {
 	outputFile: string,
 };
 
-export default async function compiler(opt: compilerOptions) {
+export default async function compiler(opt: CompilerOptions) {
 	try {
 		if (!opt.inputFiles.length) {
 			throw new compilerError({

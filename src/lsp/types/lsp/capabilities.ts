@@ -1,8 +1,4 @@
-import type { WorkDoneProgress } from "../general";
-
-export type ResourceOperationKind = "create" | "rename" | "delete";
-
-export type FailureHandlingKind = "abort" | "transactional" | "undo" | "textOnlyTransactional";
+import type { CodeActionKind, CompletionItemKind, CompletionItemTag, FailureHandlingKind, FileOperationPatternKind, FoldingRangeKind, InsertTextMode, MarkupKind, PositionEncodingKind, ResourceOperationKind, SymbolKind, SymbolTag, TextDocumentSyncKind, TokenFormat, WorkDoneProgress } from "../general";
 
 export type WorkspaceEditClientCapabilities = {
 	documentChanges?: boolean;
@@ -22,41 +18,6 @@ export type DidChangeWatchedFilesClientCapabilities = {
 	dynamicRegistration?: boolean;
 	relativePatternSupport?: boolean;
 };
-
-export enum SymbolKind {
-	Unknown,
-	File,
-	Module,
-	Namespace,
-	Package,
-	Class,
-	Method,
-	Property,
-	Field,
-	Constructor,
-	Enum,
-	Interface,
-	Function,
-	Variable,
-	Constant,
-	String,
-	Number,
-	Boolean,
-	Array,
-	Object,
-	Key,
-	Null,
-	EnumMember,
-	Struct,
-	Event,
-	Operator,
-	TypeParameter,
-}
-
-export enum SymbolTag {
-	Unknown,
-	Deprecated,
-}
 
 export type WorkspaceSymbolClientCapabilities = {
 	dynamicRegistration?: boolean;
@@ -101,48 +62,6 @@ export type TextDocumentSyncClientCapabilities = {
 	willSaveWaitUntil?: boolean;
 	didSave?: boolean;
 };
-
-export type MarkupKind = "plaintext" | "markdown";
-
-export enum CompletionItemTag {
-	Unknown,
-	Deprecated,
-}
-
-export enum InsertTextMode {
-	Unknown,
-	AsIs,
-	AdjustIndentation,
-}
-
-export enum CompletionItemKind {
-	Unknown,
-	Text,
-	Method,
-	Function,
-	Constructor,
-	Field,
-	Variable,
-	Class,
-	Interface,
-	Module,
-	Property,
-	Unit,
-	Value,
-	Enum,
-	Keyword,
-	Snippet,
-	Color,
-	File,
-	Reference,
-	Folder,
-	EnumMember,
-	Constant,
-	Struct,
-	Event,
-	Operator,
-	TypeParameter,
-}
 
 export type CompletionClientCapabilities = {
 	dynamicRegistration?: boolean;
@@ -232,17 +151,6 @@ export type DocumentSymbolClientCapabilities = {
 	labelSupport?: boolean;
 };
 
-export type CodeActionKind =
-	| ""
-	| "quickfix"
-	| "refactor"
-	| "refactor.extract"
-	| "refactor.inline"
-	| "refactor.rewrite"
-	| "source"
-	| "source.organizeImports"
-	| "source.fixAll";
-
 export type CodeActionClientCapabilities = {
 	dynamicRegistration?: boolean;
 	codeActionLiteralSupport?: {
@@ -311,8 +219,6 @@ export type PublishDiagnosticsClientCapabilities = {
 	dataSupport?: boolean;
 };
 
-export type FoldingRangeKind = "comment" | "imports" | "region";
-
 export type FoldingRangeClientCapabilities = {
 	dynamicRegistration?: boolean;
 	rangeLimit?: number;
@@ -336,8 +242,6 @@ export type LinkedEditingRangeClientCapabilities = {
 export type CallHierarchyClientCapabilities = {
 	dynamicRegistration?: boolean;
 };
-
-export type TokenFormat = "relative";
 
 export type SemanticTokensClientCapabilities = {
 	dynamicRegistration?: boolean;
@@ -451,8 +355,6 @@ export type MarkdownClientCapabilities = {
 	allowedTags?: string[];
 };
 
-export type PositionEncodingKind = "utf-8" | "utf-16" | "utf-32";
-
 export type ClientCapabilities = {
 	workspace?: {
 		applyEdit?: boolean;
@@ -496,12 +398,6 @@ export type ClientCapabilities = {
 	};
 	experimental?: any;
 };
-
-export enum TextDocumentSyncKind {
-	None,
-	Full,
-	Incremental,
-}
 
 export type TextDocumentSyncOptions = {
 	openClose?: boolean;
@@ -683,7 +579,6 @@ export type WorkspaceFoldersServerCapabilities = {
 	changeNotifications?: string | boolean;
 };
 
-export type FileOperationPatternKind = "file" | "folder";
 
 export type FileOperationPatternOptions = {
 	ignoreCase?: boolean;

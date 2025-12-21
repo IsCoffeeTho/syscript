@@ -2,13 +2,13 @@ export type RPCPacket = {
 	id?: string | number | null;
 };
 
-export type RPCRequest = RPCPacket & {
+export type RPCRequest<P extends any> = RPCPacket & {
 	method: string;
-	params: any;
+	params: P;
 };
 
-export type RPCResponse = RPCPacket & {
-	result: any;
+export type RPCResponse<R extends any> = RPCPacket & {
+	result: R;
 };
 
 export type RPCError = RPCPacket & {
@@ -19,7 +19,7 @@ export type RPCError = RPCPacket & {
 	};
 };
 
-export type RPCMessage = RPCRequest | RPCResponse | RPCError;
+export type RPCMessage = RPCRequest<any> | RPCResponse<any> | RPCError;
 
 export type RPCBody = RPCMessage & {
 	jsonrpc: "2.0" | "1.0" | string;
@@ -54,6 +54,7 @@ RpcError.prototype.toString = function () {
 
 export default {
 	encode(msg: RPCMessage) {
+		(<RPCBody>msg).jsonrpc = "2.0";
 		let body = JSON.stringify(msg);
 		let headers = {
 			"Content-Length": body.length,
@@ -92,11 +93,11 @@ export default {
 				throw new RpcError(-32700, "Parse Error.");
 			}
 			if (data.jsonrpc != "2.0") throw new RpcError(-32600, "Invalid RPC version.");
-			if ((<RPCRequest>data).method) {
-				if (!(<RPCRequest>data).params) throw new RpcError(-32600, "Missing 'params' on request.");
+			if ((<RPCRequest<any>>data).method) {
+				if (!(<RPCRequest<any>>data).params) throw new RpcError(-32600, "Missing 'params' on request.");
 			} else if ((<RPCError>data).error) {
-			} else if ((<RPCResponse>data).result) {
-				if (!(<RPCRequest>data).id) throw new RpcError(-32600, "Missing 'id' on response.");
+			} else if ((<RPCResponse<any>>data).result) {
+				if (!(<RPCRequest<any>>data).id) throw new RpcError(-32600, "Missing 'id' on response.");
 			} else throw new RpcError(-32600, "Missing one of ['method', 'result', 'error'].");
 			messages.push(<RPCMessage>{
 				id: data.id,

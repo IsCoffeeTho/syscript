@@ -14,7 +14,7 @@ class Animal {
 	}
 	
 	speak() {
-		print(this.name, ":", this.sound);
+		print(this.name + ": " + this.sound + "\n");
 	}
 }
 
@@ -27,9 +27,9 @@ class Dog extends Animal {
 fn play_with_pet(of: Person): void {
 	let announcement: string;
 	announcement = of.name;
-	announcement += " is petting";
+	announcement += " is petting ";
 	announcement += of.pet.name;
-	print(announcement);
+	print(announcement + "\n");
 	of.pet.speak();
 }
 
@@ -42,6 +42,6 @@ fn main() {
 	play_with_pet(friend);
 	/*
 		John is petting Spot
-		Bark!
+		Spot: Bark!
 	*/
 }
