@@ -1,9 +1,9 @@
-import { Problem, ProblemLevel } from "../errors/problem";
-import { token } from "../tokens/tokenize";
-import { lexicon, lexiconType } from "../tokens/lexer";
-import { searchTree, type AbstractSyntaxTree } from "./treeSearch";
+import { Problem, ProblemLevel } from "../../errors/problem";
+import { token } from "../../tokens/tokenize";
+import { lexicon, lexiconType } from "../../tokens/lexer";
+import { searchTree, type AbstractSyntaxTree } from "../treeSearch";
 
-import locale from "../locale.json";
+import locale from "../../locale.json";
 
 export function markOrphans(tree: AbstractSyntaxTree, filename: string) {
 	var retval: Problem[] = [];
