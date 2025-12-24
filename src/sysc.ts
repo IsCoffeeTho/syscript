@@ -1,12 +1,6 @@
 import parseArguments from "./cli/arguments";
 import pkg from "../package.json";
-import compilerError, { errorLevel } from "./errors/compiler.ts";
-import tokenize, { token } from "./tokens/tokenize.ts";
-import lexer from "./tokens/lexer.ts";
-import graphemizer from "./tokens/grapheme.ts";
-import type { CompilerOptions } from "./compiler/compiler.ts";
-import compiler from "./compiler/compiler.ts";
-import LSP from "./lsp/LSP.ts";
+import compiler, { type CompilerOptions } from "./compiler/compiler.ts";
 import sysclsp from "./lsp/sysclsp.ts";
 
 var lspMode = false;

@@ -1,4 +1,5 @@
 import { tokenType, type token } from "./tokenize";
+import { Problem } from "../errors/problem";
 import type { parseMachine } from "./parseMachine";
 
 export enum lexiconType {
@@ -9,6 +10,8 @@ export enum lexiconType {
 	number_literal,
 	float_literal,
 	array_literal,
+	struct_literal,
+	property,
 	primitive,
 	reference,
 	subreference,
@@ -28,13 +31,15 @@ export enum lexiconType {
 	while_loop,
 	control_flow,
 	return_statement,
+	struct_def,
+	field,
+	class_def,
 	function,
+	method,
 	type_sig,
 	type_cast,
 	code_block,
 	call,
-	class_def,
-	struct_def,
 	parameter,
 	variadic_parameter,
 	param_list,
@@ -50,6 +55,7 @@ export enum lexiconType {
 export class lexicon<C = any> {
 	children: C;
 	complete: boolean = false;
+	problem?: Problem;
 	col: number;
 	line: number;
 	constructor(
@@ -75,10 +81,8 @@ lexicon.prototype.toString = function () {
 			var childStr = `\n${childKey} = `;
 			if (Array.isArray(child)) {
 				childStr += `[`;
-				for (var subchild of child)
-					childStr += `\n${subchild}`.replace(/\n/g, "\n    ");
-				if (child.length > 0)
-					childStr += `\n`;
+				for (var subchild of child) childStr += `\n${subchild}`.replace(/\n/g, "\n    ");
+				if (child.length > 0) childStr += `\n`;
 				childStr += `]`;
 			} else {
 				childStr += `${child}`;
@@ -91,13 +95,13 @@ lexicon.prototype.toString = function () {
 };
 
 export type sublexer = {
-	isStartingToken: (tok: token) => boolean;
+	isStartingToken: (tok: token | undefined) => boolean;
 	lexer: (startToken: token, tokenizer: parseMachine<token>) => lexicon<any>;
 };
 
 import functions from "./sublex/functions/functions";
-import structs from "./sublex/structs";
-import classes from "./sublex/classes";
+import structs from "./sublex/structures/structs";
+import classes from "./sublex/structures/classes";
 import shebang from "./sublex/comments/shebang";
 import comments from "./sublex/comments/comments";
 import wrapParseMachine from "./parseMachine";
@@ -120,6 +124,9 @@ export default function lexer(tokenizer: parseMachine<token>): parseMachine<lexi
 			}
 			return tokenizer.peek();
 		},
-		available: tokenizer.hasNext,
+		available() {
+			return tokenizer.hasNext();
+		},
+		context: tokenizer.context,
 	});
 }

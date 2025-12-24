@@ -49,5 +49,6 @@ export default function graphemizer(tokenizer: parseMachine<token>): parseMachin
 		available() {
 			return tokenBuffer.length > 0 || tokenizer.hasNext();
 		},
+		context: tokenizer.context,
 	});
 }

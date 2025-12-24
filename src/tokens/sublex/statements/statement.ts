@@ -1,6 +1,7 @@
-import { lexicon, type sublexer } from "../../lexer";
+import { Problem, ProblemLevel } from "../../../errors/problem";
+import { lexicon, lexiconType, type sublexer } from "../../lexer";
 import type { parseMachine } from "../../parseMachine";
-import { tokenType, type token } from "../../tokenize";
+import { token, tokenType } from "../../tokenize";
 import { nextAfterWSC } from "../removers";
 import value from "../values/value";
 import controlFlow from "./controlFlow";
@@ -10,6 +11,8 @@ import ifStatement from "./ifStatement";
 import returnStatement from "./returnStatement";
 import switchStatement from "./switchStatement";
 import whileLoop from "./whileLoop";
+
+import locale from "../../../locale.json";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => {
@@ -23,6 +26,7 @@ export default <sublexer>{
 		return (value.isStartingToken(tok));
 	},
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var lastToken = tok;
 		if (ifStatement.isStartingToken(tok)) return ifStatement.lexer(tok, tokenizer);
 		if (switchStatement.isStartingToken(tok)) return switchStatement.lexer(tok, tokenizer);
 		if (forLoop.isStartingToken(tok)) return forLoop.lexer(tok, tokenizer);
@@ -33,22 +37,47 @@ export default <sublexer>{
 		
 		if (controlFlow.isStartingToken(tok)) {
 			retval = controlFlow.lexer(tok, tokenizer);
-			tok = nextAfterWSC(tokenizer);
+			[lastToken, tok] = [tok, nextAfterWSC(tokenizer)];
 		} else if (returnStatement.isStartingToken(tok)) {
 			retval = returnStatement.lexer(tok, tokenizer);
-			tok = nextAfterWSC(tokenizer);
+			[lastToken, tok] = [tok, nextAfterWSC(tokenizer)];
 		} else if (value.isStartingToken(tok)) {
 			retval = value.lexer(tok, tokenizer);
-			tok = nextAfterWSC(tokenizer);
-		} else
+			[lastToken, tok] = [tok, nextAfterWSC(tokenizer)];
+		} else {
+			tok.problem = new Problem(locale.unexpected_token, {
+				filename: tokenizer.context.filename,
+				line: tok.line,
+				col: tok.col,
+				size: tok.value.length,
+				level: ProblemLevel.Error,
+			});
 			return tok;
+		}
 		
-		retval.complete = (tok.type == tokenType.symbol && tok.value == ";");
-		if (!retval.complete)
+		if (!tok) {
+			tok = new token(tokenType.EOF, 0, 0);
+			tok.problem = new Problem(locale.end_of_file, {
+				filename: tokenizer.context.filename,
+				level: ProblemLevel.Error,
+			});
+			return tok;
+		}
+		
+		if (tok.type != tokenType.symbol || tok.value != ";") {
 			tokenizer.push(tok);
-		else
-			retval.children.end = tok;
-		return retval;
+			retval.problem = new Problem(locale.missing_semicolon, {
+				filename: tokenizer.context.filename,
+				line: tok.line,
+				col: tok.col,
+				size: tok.value.length,
+				level: ProblemLevel.Error,
+			});
+			return retval;
+		}
 		
+		retval.children.end = tok;
+		retval.complete = true;
+		return retval;
 	},
 };

@@ -1,9 +1,12 @@
+import { Problem, ProblemLevel } from "../../../errors/problem";
 import { lexicon, lexiconType, type sublexer } from "../../lexer";
 import type { parseMachine } from "../../parseMachine";
 import { type token, tokenType } from "../../tokenize";
 
+import locale from "../../../locale.json";
+
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.numeric,
+	isStartingToken: (tok: token) => tok && tok.type == tokenType.numeric,
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.number_literal, tok, [tok]);
 		retval.complete = true;
@@ -17,7 +20,16 @@ export default <sublexer>{
 			retval.type = lexiconType.float_literal;
 			retval.children.push(tok);
 			tok = tokenizer.next();
-			if (tok.type != tokenType.numeric) return retval;
+			if (tok.type != tokenType.numeric) {
+				retval.problem = new Problem(locale.unexpected_token, {
+					filename: tokenizer.context.filename,
+					line: tok.line,
+					col: tok.col,
+					size: tok.value.length,
+					level: ProblemLevel.Error,
+				});
+				return retval;
+			}
 			retval.children.push(tok);
 
 			retval.complete = true;

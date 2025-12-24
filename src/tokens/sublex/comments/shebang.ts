@@ -4,6 +4,7 @@ import { tokenType, type token } from "../../tokenize";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) => {
+		if (!tok) return false;
 		var startOfFile = tok.line == 1 && tok.col == 1;
 		return startOfFile && tok.type == tokenType.grapheme && tok.value == "#!";
 	},

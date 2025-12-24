@@ -3,7 +3,7 @@ import type { parseMachine } from "../../parseMachine";
 import { type token, tokenType } from "../../tokenize";
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.grapheme && ( tok.value == "||" || tok.value == "&&"),
+	isStartingToken: (tok: token) => tok && tok.type == tokenType.grapheme && ( tok.value == "||" || tok.value == "&&"),
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.logic_operator, tok, {
 			operator: tok

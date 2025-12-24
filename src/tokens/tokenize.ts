@@ -1,4 +1,6 @@
+import { Problem, ProblemLevel } from "../errors/problem";
 import wrapParseMachine, { type parseMachine } from "./parseMachine";
+import locale from "../locale.json";
 
 export enum tokenType {
 	EOF = -1,
@@ -23,6 +25,7 @@ const tokenTypeRegExp = {
 export class token {
 	type: tokenType = tokenType.unknown;
 	value: string = "";
+	problem?: Problem;
 	constructor(
 		public position: number,
 		public line: number,
@@ -34,7 +37,7 @@ token.prototype.toString = function () {
 	return `Token ${JSON.stringify(this.value)} <${tokenType[this.type]}> ${this.line}:${this.col}`;
 };
 
-export default function tokenize(file: Buffer): parseMachine<token> {
+export default function tokenize(file: Buffer, filename?: string): parseMachine<token> {
 	var head = 0;
 	var col = 1;
 	var line = 1;
@@ -78,7 +81,7 @@ export default function tokenize(file: Buffer): parseMachine<token> {
 			if (char == 0x0a) nextLine = true;
 			return String.fromCodePoint(char);
 		} catch (err) {
-			throw new Error(`Malformed UTF-8 unicode character @ (~${head}) ${line}:${col}`);
+			throw new Problem(locale.malformed_unicode, {filename, line, col, level: ProblemLevel.Error});
 		}
 	};
 
@@ -125,5 +128,8 @@ export default function tokenize(file: Buffer): parseMachine<token> {
 	return wrapParseMachine({
 		consume,
 		available: () => head < file.length || lastChar != undefined,
+		context: {
+			filename,
+		},
 	});
 }

@@ -9,13 +9,14 @@ type typeLexicon = {
 };
 
 export default <sublexer>{
-	isStartingToken: (tok: token) => tok.type == tokenType.identifier,
+	isStartingToken: (tok: token) => tok && tok.type == tokenType.identifier,
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
+		var lastToken = tok;
 		var retval = new lexicon(lexiconType.type_sig, tok, <typeLexicon>{
 			name: tok,
 		});
 		retval.complete = true;
-		tok = nextAfterWSC(tokenizer);
+		[lastToken, tok] = [tok, nextAfterWSC(tokenizer)];
 		if (tok.type == tokenType.grapheme && tok.value == "[]") {
 			retval.children.list = tok;
 		} else

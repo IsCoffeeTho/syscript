@@ -1,5 +1,5 @@
 import type { TextDocumentItem } from "../../general";
 
-export type DocumentOpenNotification = {
+export type DocumentOpenNotif = {
 	textDocument: TextDocumentItem;
 };

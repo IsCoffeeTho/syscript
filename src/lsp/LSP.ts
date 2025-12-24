@@ -1,13 +1,13 @@
-import { EventEmitter } from "events";
 import RPC, { RpcError, type RPCError, type RPCMessage, type RPCRequest, type RPCResponse } from "./RPC";
 import type { InitializeMessage, InitializeResponse } from "./types/lsp/messages/Initialize";
 import type Workspace from "./types/workspace";
-import type { ServerCapabilities } from "./types/lsp/capabilities";
-import { error } from "console";
+import type { ServerCapabilities, TextDocumentSyncOptions } from "./types/lsp/capabilities";
 import type { HoverRequest, HoverResponse } from "./types/lsp/messages/Hover";
-import type { DocumentOpenNotification } from "./types/lsp/notifications/DocumentOpen";
+import type { DocumentOpenNotif } from "./types/lsp/notifications/DocumentOpen";
 import { TextDocumentSyncKind } from "./types/general";
 import type { DidChangeDocumentNotif } from "./types/lsp/notifications/DidChangeDoc";
+import type { DiagnosticReport, DocumentDiagnoseNotif } from "./types/lsp/notifications/DocumentDiagnose";
+import { file } from "bun";
 
 export class LSPResponse<R extends any = {}> {
 	public readonly id;
@@ -43,16 +43,19 @@ export type LSPOption = {
 
 export default function LSP(opt: LSPOption) {
 	var fileHandlers = {
-		create: <{ [glob: string]: (ev: any) => any }>{},
+		open: <((ev: any) => any) | null>null,
 		change: <((ev: any) => any) | null>null,
+		diagnose: <((ev: any) => any) | null>null,
 	};
 	var notifications: { [_: string]: ((ev: any) => any) | null } = {
 		configChange: null,
 		docOpen: null,
 	};
 	var providers: { [_: string]: ((req: any, res: LSPResponse<any>) => any) | null } = {
-		declarationProvider: null,
-		definitionProvider: null,
+		hover: null,
+		declaration: null,
+		diagnose: null,
+		definition: null,
 	};
 	var workspaces: { [_: string]: Workspace } = {};
 
@@ -110,6 +113,7 @@ export default function LSP(opt: LSPOption) {
 
 	sendLog(5, [`Started LSP`]);
 	return {
+		root_uri: "",
 		logger: {
 			assert(condition: boolean, ...msg: any[]) {
 				if (condition !== false) return;
@@ -121,43 +125,55 @@ export default function LSP(opt: LSPOption) {
 			log: (...msg: any[]) => sendLog(4, msg),
 			debug: (...msg: any[]) => sendLog(5, msg),
 		},
+		onDocOpen(handler: (req: DocumentOpenNotif) => any) {
+			fileHandlers.open = handler;
+		},
 		onDocChange(handler: (req: DidChangeDocumentNotif) => any) {
 			fileHandlers.change = handler;
 		},
-		onDocOpen(provider: (req: DocumentOpenNotification) => any) {
-			notifications.docOpen = provider;
+		onDocDiagnose(provider: (req: DocumentDiagnoseNotif, res: LSPResponse<DiagnosticReport>) => any) {
+			providers.diagnose = provider;
 		},
-		onError(errHandler: (err: RPCError) => any) {
-			(async () => {
-				while (true) {
-					while (errorQueue.length == 0) await Bun.sleep(0);
-					errHandler(<RPCError>errorQueue.shift());
-				}
-			})();
-		},
+		onError(errHandler: (err: RPCError) => any) {},
 		onHover(provider: (req: HoverRequest, res: LSPResponse<HoverResponse>) => any) {
-			providers.hoverProvider = provider;
+			providers.hover = provider;
 		},
 		goToDeclaration(provider: () => any) {
-			// providers.declarationProvider = provider;
+			// providers.declaration = provider;
 		},
 		begin() {
 			let capabilities: ServerCapabilities = {
-				textDocumentSync: {
-					openClose: false,
-					change: TextDocumentSyncKind.Incremental,
+				diagnosticProvider: {
+					interFileDependencies: true,
+					workspaceDiagnostics: false,
 				},
 				workspace: {
 					workspaceFolders: {
-						supported: true,
-						changeNotifications: true,
+						supported: false,
+						changeNotifications: false,
 					},
 					fileOperations: {},
 				},
 			};
-			
-			if (providers.hoverProvider != null) capabilities.hoverProvider = true;
-			
+			if (providers.hover != null) capabilities.hoverProvider = true;
+
+			if (fileHandlers.open != null) {
+				if (!capabilities.textDocumentSync) capabilities.textDocumentSync = {};
+				(<TextDocumentSyncOptions>capabilities.textDocumentSync).openClose = true;
+			}
+
+			if (fileHandlers.change != null) {
+				if (!capabilities.textDocumentSync) capabilities.textDocumentSync = {};
+				(<TextDocumentSyncOptions>capabilities.textDocumentSync).change = TextDocumentSyncKind.Incremental;
+			}
+
+			// if (fileHandlers.diagnose != null) {
+			// 	// capabilities.diagnosticProvider = {
+			// 	// 	interFileDependencies: true,
+			// 	// 	workspaceDiagnostics: true,
+			// 	// };
+			// }
+
 			enum LSPState {
 				uninitialized,
 				initialized,
@@ -172,8 +188,8 @@ export default function LSP(opt: LSPOption) {
 							let msg = <RPCRequest<InitializeMessage>>message;
 							if (state == LSPState.uninitialized) {
 								if (msg.method != "initialize") throw new RpcError(-32002, "Server Not Initialized.");
-								
 								state = LSPState.initialized;
+								this.root_uri = msg.params.rootUri ?? msg.params.rootPath ?? "";
 								let response = new LSPResponse<InitializeResponse>(msg);
 								response.result = {
 									capabilities,
@@ -200,7 +216,7 @@ export default function LSP(opt: LSPOption) {
 										if (fileHandlers.change) fileHandlers.change(msg.params);
 										return;
 									case "textDocument/didOpen":
-										if (notifications.docOpen) notifications.docOpen(msg.params);
+										if (fileHandlers.open) fileHandlers.open(msg.params);
 										return;
 									case "workspace/didChangeConfiguration":
 										if (notifications.configChange) notifications.configChange(msg.params);
@@ -213,8 +229,11 @@ export default function LSP(opt: LSPOption) {
 							let response = new LSPResponse(msg);
 
 							switch (msg.method) {
+								case "textDocument/diagnostic":
+									if (providers.diagnose) providers.diagnose(msg.params, response);
+									return;
 								case "textDocument/hover":
-									if (providers.hoverProvider) providers.hoverProvider(msg.params, response);
+									if (providers.hover) providers.hover(msg.params, response);
 									return;
 								default:
 									throw new RpcError(-32601, `Method '${msg.method}' not found.`);

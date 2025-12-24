@@ -1,11 +1,15 @@
 import LSP from "./LSP";
 import pkg from "../../package.json";
-import type Document from "./types/document";
-import tokenize, { tokenType } from "../tokens/tokenize";
-import compilerError, { errorLevel } from "../errors/compiler";
-import { RpcError } from "./RPC";
-import graphemizer from "../tokens/grapheme";
-import lexer from "../tokens/lexer";
+import Document, { type ContentChange } from "./types/document";
+import type { lexicon } from "../tokens/lexer";
+import { token } from "../tokens/tokenize";
+import { aggregateProblems } from "../semantic/AggregateProblems";
+import { DiagnosticSeverity, type Diagnostic } from "./types/lsp/notifications/DocumentDiagnose";
+import type { Range } from "./types/general";
+import { Problem } from "../errors/problem";
+
+import locale from "../locale.json";
+import { markOrphans } from "../semantic/markOrphans";
 
 export default function sysclsp() {
 	const lsp = LSP({
@@ -13,40 +17,95 @@ export default function sysclsp() {
 		version: pkg.version,
 	});
 	const logger = lsp.logger;
-	
-	lsp.onDocChange((req) => {
+
+	var documents: { [_: string]: Document } = {};
+
+	lsp.onDocOpen(async req => {
+		let uri = req.textDocument.uri;
+		var doc = documents[uri];
+		if (!doc) {
+			doc = new Document(lsp, uri);
+			await doc.forceSync();
+			documents[uri] = doc;
+		}
+	});
+
+	lsp.onDocChange(async req => {
+		let uri = req.textDocument.uri;
+		var doc = documents[uri];
+		if (!doc) return;
+		doc.makeEdit(<ContentChange[]>req.contentChanges);
+	});
+
+	lsp.onDocDiagnose(async (req, res) => {
+		let uri = req.textDocument.uri;
+		let path = uri.slice(lsp.root_uri.length);
+		var doc = documents[uri];
+		if (!doc) {
+			doc = new Document(lsp, uri);
+			await doc.forceSync();
+			documents[uri] = doc;
+		}
 		
+		while (!doc.updated)
+			await Bun.sleep(1);
+			
+		markOrphans(doc.ast, path);
+		
+		var problemsList = aggregateProblems(doc.ast);
+		
+		for (var leaf of doc.ast) {
+			if (leaf instanceof token) {
+				problemsList.push(new Problem(locale.unexpected_token, {
+					filename: path,
+					line: leaf.line,
+					col: leaf.col,
+					size: leaf.value.length,
+				}));
+			}
+		}
+		
+		if (problemsList.length == 0) {
+			res.result = {
+				kind: "full",
+				items: []
+			};
+			res.send();
+			return;
+		}
+		res.result = {
+			kind: "full",
+			items: problemsList.map(v => {
+				return {
+					severity: DiagnosticSeverity.Error,
+					message: v.description ?? "",
+					range: <Range>{
+						start: {
+							line: (v.ctx?.line ?? 1) - 1,
+							character: (v.ctx?.col ?? 1) - 1,
+						},
+						end: {
+							line: (v.ctx?.line ?? 1) - 1,
+							character: (v.ctx?.col ?? 1) + (v.ctx?.size ?? 0) - 1,
+						},
+					},
+				};
+			}),
+		};
+		res.send();
 	});
 
 	lsp.onHover(async (req, res) => {
-		var filename = req.textDocument.uri;
-		var file = await fetch(filename);
-		var buf = await file.bytes();
-		var tokenizer = tokenize(Buffer.from(buf));
-		tokenizer = graphemizer(tokenizer);
-		while (tokenizer.hasNext()) {
-			var token = tokenizer.next();
-			if (token.line - 1 == req.position.line) {
-				if ((token.col + token.value.length - 1) >= req.position.character) {
-					res.result.contents = {
-						kind: "markdown",
-						value: `\`${tokenType[token.type]} ${req.position.line}:${req.position.character}\``,
-					};
-					res.result.range = {
-						start: {
-							line: token.line - 1,
-							character: token.col - 1,
-						},
-						end: {
-							line: token.line - 1,
-							character: token.col + token.value.length - 1,
-						}
-					};
-					break;
-				}
-			} else if (token.line > req.position.line)
-				break;
-		}
+		let uri = req.textDocument.uri;
+		var doc = documents[uri];
+		if (!doc) return;
+		if (!doc.ast) return;
+		var root: (lexicon | token)[] = doc.ast;
+
+		res.result.contents = {
+			kind: "markdown",
+			value: "**test**",
+		};
 		res.send();
 	});
 

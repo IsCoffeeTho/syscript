@@ -1,5 +1,10 @@
 let mutable: uint64 = 0;
 
+fn panic(err: string): noreturn {
+	print("PANIC: " + err);
+	exit(1);
+}
+
 struct Person {
 	name: string;
 	pet: Animal;
@@ -34,14 +39,17 @@ fn play_with_pet(of: Person): void {
 }
 
 fn main() {
-	let friend: Person = new Person();
+	let friend: Person = {
+		name: "John",
+		pet: new Dog("Spot")
+	};
+	
 	if (friend == null)
-		return;
-	friend.name = "John";
-	friend.pet = new Dog("Spot");
+		panic("Couldn't make friend.");
 	play_with_pet(friend);
 	/*
 		John is petting Spot
 		Spot: Bark!
 	*/
+	// friend and friend.pet get grabage collected
 }

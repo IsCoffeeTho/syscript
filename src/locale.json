@@ -1,0 +1,21 @@
+{
+	"uncaught_error": "There was an unexpected error.",
+	"debug_comp_flag_tutorial": "Add --debug-compilation to see the error",
+
+	"missing_input_files": "Missing input files.",
+
+	"version_flag": "Prints version information about the compiler.",
+	"lsp_flag": "Runs the LSP for in editor errors and assistance.",
+	"output_file_flag": "Set where the compiled output should be saved.",
+	"debug_comp_flag": "Provide error information about the compiling process.",
+
+	"compilation_terminated": "Compilation terminated.",
+
+	"malformed_unicode": "Bad unicode charater.",
+
+	"unexpected_token": "Unexpected Token.",
+	"missing_semicolon": "Missing semicolon.",
+	"mismatch_bracket": "Mismatch bracket.",
+	
+	"end_of_file": "Unexpected End of file."
+}

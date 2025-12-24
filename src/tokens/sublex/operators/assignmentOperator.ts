@@ -4,16 +4,19 @@ import { type token, tokenType } from "../../tokenize";
 
 export default <sublexer>{
 	isStartingToken: (tok: token) =>
-		(tok.type == tokenType.symbol && tok.value == "=") ||
-		(tok.type == tokenType.grapheme &&
-			(tok.value == "+=" ||
-				tok.value == "-=" ||
-				tok.value == "*=" ||
-				tok.value == "/=" ||
-				tok.value == "%=" ||
-				tok.value == "|=" ||
-				tok.value == "&=" ||
-				tok.value == "^=" || tok.value == ">>=" || tok.value == "<<=")),
+		tok &&
+		((tok.type == tokenType.symbol && tok.value == "=") ||
+			(tok.type == tokenType.grapheme &&
+				(tok.value == "+=" ||
+					tok.value == "-=" ||
+					tok.value == "*=" ||
+					tok.value == "/=" ||
+					tok.value == "%=" ||
+					tok.value == "|=" ||
+					tok.value == "&=" ||
+					tok.value == "^=" ||
+					tok.value == ">>=" ||
+					tok.value == "<<="))),
 	lexer: (tok: token, tokenizer: parseMachine<token>) => {
 		var retval = new lexicon(lexiconType.comparative_operator, tok, {
 			operator: tok,
